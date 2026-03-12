@@ -1,0 +1,103 @@
+import { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
+import { db } from "@/lib/db";
+import { ok, fail } from "@/lib/response";
+import { Role } from "@prisma/client";
+
+// ── Shared select shape ────────────────────────────────────────────────────
+
+const USER_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+  role: true,
+  status: true,
+  createdAt: true,
+} as const;
+
+// ── GET /api/admin/users ───────────────────────────────────────────────────
+
+/**
+ * Returns all users ordered by creation date (newest first).
+ * Fields: id, fullName, email, role, status, createdAt.
+ */
+export async function GET() {
+  const users = await db.user.findMany({
+    select: USER_SELECT,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return ok("Users retrieved successfully.", { users });
+}
+
+// ── POST /api/admin/users ──────────────────────────────────────────────────
+
+/**
+ * Creates a new user with status "pending".
+ *
+ * Body: { fullName: string; email: string; role: "admin" | "member" }
+ *
+ * The new user has no usable password — a random placeholder hash is stored
+ * so the DB constraint is satisfied. They must accept an invite to set one.
+ */
+export async function POST(req: NextRequest) {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return fail("Request body must be valid JSON.");
+  }
+
+  // ── Validate ─────────────────────────────────────────────────────────────
+  const errors: Record<string, string[]> = {};
+
+  const { fullName, email, role } = (body ?? {}) as Record<string, unknown>;
+
+  if (typeof fullName !== "string" || !fullName.trim()) {
+    errors.fullName = ["Full name is required."];
+  }
+
+  if (typeof email !== "string" || !email.trim()) {
+    errors.email = ["Email is required."];
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = ["Email must be a valid email address."];
+  }
+
+  if (role !== "admin" && role !== "member") {
+    errors.role = ["Role must be either 'admin' or 'member'."];
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return fail("Validation failed.", 422, errors);
+  }
+
+  const normalizedEmail = (email as string).toLowerCase().trim();
+
+  // ── Check uniqueness ─────────────────────────────────────────────────────
+  const existing = await db.user.findUnique({ where: { email: normalizedEmail } });
+  if (existing) {
+    return fail("A user with this email already exists.", 409);
+  }
+
+  // ── Create with placeholder password ─────────────────────────────────────
+  // The placeholder can never be matched by bcrypt.compare against real input,
+  // ensuring the account is only accessible after invite acceptance.
+  const placeholderPassword = await bcrypt.hash(
+    randomBytes(32).toString("hex"),
+    12
+  );
+
+  const user = await db.user.create({
+    data: {
+      fullName: (fullName as string).trim(),
+      email: normalizedEmail,
+      role: role as Role,
+      status: "pending",
+      password: placeholderPassword,
+    },
+    select: USER_SELECT,
+  });
+
+  return ok("User created successfully.", { user }, 201);
+}
