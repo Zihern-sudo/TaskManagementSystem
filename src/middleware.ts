@@ -11,6 +11,8 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
   "/api/auth/magic-link",
   "/api/auth/logout",
+  "/api/auth/invite/verify",
+  "/api/auth/invite/accept",
 ];
 
 /**
