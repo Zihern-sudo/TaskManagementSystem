@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum Role {
+  admin
+  member
+}
+
+enum AccountStatus {
+  pending
+  invited
+  active
+}
+
+enum TaskStatus {
+  not_started
+  in_progress
+  in_review
+  completed
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  critical
+}
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+model User {
+  id            String        @id @default(cuid())
+  fullName      String
+  email         String        @unique
+  password      String
+  role          Role          @default(member)
+  status        AccountStatus @default(pending)
+
+  // Temporary tokens
+  inviteToken       String?   @unique
+  inviteTokenExpiry DateTime?
+  magicLinkToken    String?   @unique
+  magicLinkExpiry   DateTime?
+
+  // Relations
+  assignedTasks Task[]    @relation("AssignedTo")
+  comments      Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(not_started)
+  priority    TaskPriority @default(medium)
+  dueDate     DateTime?
+
+  // Relations
+  assignedUserId String?
+  assignedUser   User?     @relation("AssignedTo", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  comments       Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model Comment {
+  id      String @id @default(cuid())
+  content String
+
+  // Relations
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Self-referential for threaded replies
+  parentId String?
+  parent   Comment?  @relation("Replies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  Comment[] @relation("Replies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
