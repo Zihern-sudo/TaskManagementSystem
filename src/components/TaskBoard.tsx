@@ -422,10 +422,16 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   );
 
   const fetchTasks = useCallback(async () => {
-    const res = await fetch("/api/tasks");
-    const data = await res.json();
-    if (data.data?.tasks) setTasks(data.data.tasks);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/tasks");
+      if (!res.ok) { setLoading(false); return; }
+      const data = await res.json();
+      if (data.data?.tasks) setTasks(data.data.tasks);
+    } catch {
+      // empty / non-JSON response — db likely not migrated yet
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
