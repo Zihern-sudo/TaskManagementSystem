@@ -409,6 +409,7 @@ function DeleteConfirm({ task, onConfirm, onCancel }: { task: Task; onConfirm: (
 export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isNewTask, setIsNewTask] = useState(false);
@@ -425,11 +426,19 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const fetchTasks = useCallback(async () => {
     try {
       const res = await fetch("/api/tasks");
-      if (!res.ok) { setLoading(false); return; }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setFetchError(errData.message || `Server error ${res.status} — run: npx prisma db push`);
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
-      if (data.data?.tasks) setTasks(data.data.tasks);
+      if (data.data?.tasks) {
+        setTasks(data.data.tasks);
+        setFetchError(null);
+      }
     } catch {
-      // empty / non-JSON response — db likely not migrated yet
+      setFetchError("Could not reach the server. Make sure npm run dev is running.");
     } finally {
       setLoading(false);
     }
@@ -503,6 +512,31 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
           Loading board...
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex items-center justify-center h-64 p-6">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-lg w-full text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+            <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="font-semibold text-red-800">Failed to load tasks</h3>
+          <p className="text-sm text-red-600">{fetchError}</p>
+          <div className="bg-red-100 rounded-lg px-4 py-2 text-xs text-red-700 font-mono text-left">
+            npx prisma db push
+          </div>
+          <button
+            onClick={() => { setFetchError(null); setLoading(true); fetchTasks(); }}
+            className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
