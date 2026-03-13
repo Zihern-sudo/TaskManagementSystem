@@ -18,12 +18,27 @@ export const TASK_SELECT = {
   status: true,
   priority: true,
   dueDate: true,
-  assignedUser: {
-    select: { id: true, fullName: true, email: true },
+  assignees: {
+    select: {
+      user: { select: { id: true, fullName: true, email: true } },
+    },
+    orderBy: { assignedAt: "asc" as const },
   },
   createdAt: true,
   updatedAt: true,
 } as const;
+
+// Flatten assignees from join table to plain user array
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function serializeTask(task: any) {
+  return {
+    ...task,
+    assignees: task.assignees.map((a: { user: unknown }) => a.user),
+    dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
+    createdAt: new Date(task.createdAt).toISOString(),
+    updatedAt: new Date(task.updatedAt).toISOString(),
+  };
+}
 
 // ── GET /api/tasks ─────────────────────────────────────────────────────────
 
@@ -36,7 +51,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return ok("Tasks retrieved successfully.", { tasks });
+  return ok("Tasks retrieved successfully.", { tasks: tasks.map(serializeTask) });
 }
 
 // ── POST /api/tasks ────────────────────────────────────────────────────────
@@ -50,10 +65,9 @@ export async function GET() {
  *   status       TaskStatus   (optional, default: not_started)
  *   priority     TaskPriority (optional, default: medium)
  *   dueDate      ISO date string (optional)
- *   assignedUserId string (optional)
+ *   assigneeIds  string[]  (optional, up to 5 user IDs)
  */
 export async function POST(req: NextRequest) {
-  // Middleware guarantees a valid session; this is a safety read.
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
@@ -70,7 +84,7 @@ export async function POST(req: NextRequest) {
     status,
     priority,
     dueDate,
-    assignedUserId,
+    assigneeIds,
   } = (body ?? {}) as Record<string, unknown>;
 
   // ── Validate ──────────────────────────────────────────────────────────────
@@ -96,22 +110,26 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (assignedUserId !== undefined && assignedUserId !== null && typeof assignedUserId !== "string") {
-    errors.assignedUserId = ["assignedUserId must be a string."];
+  const ids: string[] = [];
+  if (assigneeIds !== undefined && assigneeIds !== null) {
+    if (!Array.isArray(assigneeIds)) {
+      errors.assigneeIds = ["assigneeIds must be an array of user IDs."];
+    } else if (assigneeIds.length > 5) {
+      errors.assigneeIds = ["Maximum 5 assignees allowed."];
+    } else {
+      ids.push(...(assigneeIds as string[]));
+    }
   }
 
   if (Object.keys(errors).length > 0) {
     return fail("Validation failed.", 422, errors);
   }
 
-  // ── Verify assigned user exists ───────────────────────────────────────────
-  if (assignedUserId) {
-    const userExists = await db.user.findUnique({
-      where: { id: assignedUserId as string },
-      select: { id: true },
-    });
-    if (!userExists) {
-      return fail("Assigned user not found.", 404);
+  // ── Verify assignees exist ─────────────────────────────────────────────────
+  if (ids.length > 0) {
+    const found = await db.user.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    if (found.length !== ids.length) {
+      return fail("One or more assignees not found.", 404);
     }
   }
 
@@ -123,10 +141,14 @@ export async function POST(req: NextRequest) {
       ...(status !== undefined && { status: status as TaskStatus }),
       ...(priority !== undefined && { priority: priority as TaskPriority }),
       ...(parsedDueDate !== undefined && { dueDate: parsedDueDate }),
-      ...(assignedUserId !== undefined && { assignedUserId: assignedUserId as string || null }),
+      ...(ids.length > 0 && {
+        assignees: {
+          create: ids.map((userId) => ({ userId })),
+        },
+      }),
     },
     select: TASK_SELECT,
   });
 
-  return ok("Task created successfully.", { task }, 201);
+  return ok("Task created successfully.", { task: serializeTask(task) }, 201);
 }

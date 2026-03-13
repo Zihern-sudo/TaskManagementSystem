@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { decodeSession, SESSION_COOKIE } from "@/lib/session";
 import TaskBoard from "@/components/TaskBoard";
+import BoardDiscussion from "@/components/BoardDiscussion";
 import { SessionUser } from "@/types";
 
 export const metadata = { title: "Board – RIO Task" };
@@ -20,5 +21,10 @@ export default async function TasksPage() {
     role: session.role as "admin" | "member",
   };
 
-  return <TaskBoard currentUser={currentUser} />;
+  return (
+    <div className="flex flex-col min-h-full">
+      <TaskBoard currentUser={currentUser} />
+      <BoardDiscussion currentUser={currentUser} />
+    </div>
+  );
 }

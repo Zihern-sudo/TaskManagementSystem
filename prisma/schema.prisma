@@ -57,8 +57,10 @@ model User {
   magicLinkExpiry   DateTime?
 
   // Relations
-  assignedTasks Task[]    @relation("AssignedTo")
-  comments      Comment[]
+  taskAssignments TaskAssignee[]
+  comments        Comment[]
+  boardComments   BoardComment[]
+  boardReactions  BoardReaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,14 +77,25 @@ model Task {
   dueDate     DateTime?
 
   // Relations
-  assignedUserId String?
-  assignedUser   User?     @relation("AssignedTo", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  comments       Comment[]
+  assignees TaskAssignee[]
+  comments  Comment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("tasks")
+}
+
+model TaskAssignee {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([taskId, userId])
+  @@map("task_assignees")
 }
 
 model Comment {
@@ -105,4 +118,38 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   @@map("comments")
+}
+
+model BoardComment {
+  id      String @id @default(cuid())
+  content String
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // One level of threading
+  parentId String?
+  parent   BoardComment?  @relation("BoardReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies  BoardComment[] @relation("BoardReplies")
+
+  reactions BoardReaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("board_comments")
+}
+
+model BoardReaction {
+  id        String @id @default(cuid())
+  emoji     String
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  commentId String
+  comment   BoardComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@map("board_reactions")
 }
