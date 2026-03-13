@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (assignedUserId !== undefined && typeof assignedUserId !== "string") {
+  if (assignedUserId !== undefined && assignedUserId !== null && typeof assignedUserId !== "string") {
     errors.assignedUserId = ["assignedUserId must be a string."];
   }
 
