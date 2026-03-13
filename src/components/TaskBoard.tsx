@@ -506,8 +506,8 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Project Board</h1>
-          <p className="text-sm text-blue-600 font-medium">{tasks.length} tasks total</p>
+          <h1 className="text-xl font-bold text-gray-900">Project Kanban Board</h1>
+          <p className="text-sm text-gray-500">{tasks.length} tasks total</p>
         </div>
 
         <div className="flex items-center gap-3">
