@@ -30,11 +30,11 @@ interface TaskBoardProps {
   currentUser: SessionUser;
 }
 
-const COLUMNS: { id: TaskStatus; label: string; color: string; headerColor: string }[] = [
-  { id: "not_started", label: "To Do", color: "bg-gray-50 border-gray-200", headerColor: "bg-gray-400" },
-  { id: "in_progress", label: "In Progress", color: "bg-blue-50 border-blue-200", headerColor: "bg-blue-500" },
-  { id: "in_review", label: "In Review", color: "bg-yellow-50 border-yellow-200", headerColor: "bg-yellow-500" },
-  { id: "completed", label: "Done", color: "bg-green-50 border-green-200", headerColor: "bg-green-500" },
+const COLUMNS: { id: TaskStatus; label: string; bg: string; border: string; headerColor: string }[] = [
+  { id: "not_started", label: "To Do", bg: "bg-gray-50", border: "border-gray-300", headerColor: "bg-gray-400" },
+  { id: "in_progress", label: "In Progress", bg: "bg-blue-50", border: "border-blue-200", headerColor: "bg-blue-500" },
+  { id: "in_review", label: "In Review", bg: "bg-yellow-50", border: "border-yellow-200", headerColor: "bg-yellow-500" },
+  { id: "completed", label: "Done", bg: "bg-green-50", border: "border-green-200", headerColor: "bg-green-500" },
 ];
 
 function getInitials(name: string) {
@@ -148,7 +148,7 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
         className={`flex-1 min-h-[200px] rounded-xl border-2 border-dashed p-2 space-y-2 transition-colors ${
           isOver
             ? "border-blue-400 bg-blue-50"
-            : `${column.color} border-transparent`
+            : `${column.bg} ${column.border}`
         }`}
       >
         {tasks.map((task) => (
