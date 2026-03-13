@@ -41,6 +41,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next({ request: { headers } });
   }
 
+  // ── Public pages — no auth required ──────────────────────────────────────
+  if (pathname === "/accept-invite" || pathname.startsWith("/auth/magic")) {
+    return NextResponse.next();
+  }
+
   // ── Login page — redirect to /tasks if already authenticated ─────────────
   if (pathname === "/login") {
     const tokenValue = req.cookies.get(SESSION_COOKIE)?.value;
