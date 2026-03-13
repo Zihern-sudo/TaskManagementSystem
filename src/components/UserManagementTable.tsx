@@ -153,12 +153,24 @@ export default function UserManagementTable() {
   }
 
   async function handleDeactivate(userId: string) {
-    if (!confirm("Deactivate this user?")) return;
+    if (!confirm("Deactivate this user? They will no longer be able to sign in.")) return;
     await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "pending" }),
     });
+    await fetchUsers();
+  }
+
+  async function handleRevokeInvite(userId: string) {
+    if (!confirm("Revoke this invitation? The email link will be invalidated.")) return;
+    await fetch(`/api/admin/users/${userId}/revoke-invite`, { method: "POST" });
+    await fetchUsers();
+  }
+
+  async function handleDelete(userId: string) {
+    if (!confirm("Permanently delete this user? This cannot be undone.")) return;
+    await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
     await fetchUsers();
   }
 
@@ -286,27 +298,65 @@ export default function UserManagementTable() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          {(user.status === "pending") && (
-                            <button
-                              onClick={() => handleInvite(user.id)}
-                              className="text-xs px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-medium transition-colors"
-                            >
-                              Send Invite
-                            </button>
+                          {user.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => handleInvite(user.id)}
+                                className="text-xs px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-medium transition-colors"
+                              >
+                                Send Invite
+                              </button>
+                              <button
+                                onClick={() => setEditUser(user)}
+                                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
                           )}
-                          <button
-                            onClick={() => setEditUser(user)}
-                            className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                          >
-                            Edit
-                          </button>
+                          {user.status === "invited" && (
+                            <>
+                              <button
+                                onClick={() => setEditUser(user)}
+                                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleRevokeInvite(user.id)}
+                                className="text-xs px-3 py-1.5 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg font-medium transition-colors"
+                              >
+                                Revoke
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user.id)}
+                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                           {user.status === "active" && (
-                            <button
-                              onClick={() => handleDeactivate(user.id)}
-                              className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors"
-                            >
-                              Deactivate
-                            </button>
+                            <>
+                              <button
+                                onClick={() => setEditUser(user)}
+                                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeactivate(user.id)}
+                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors"
+                              >
+                                Deactivate
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
