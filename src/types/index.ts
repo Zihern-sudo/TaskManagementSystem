@@ -7,6 +7,7 @@ export interface AssignedUser {
   id: string;
   fullName: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 export interface Task {
@@ -60,6 +61,7 @@ export interface User {
   email: string;
   role: UserRole;
   status: AccountStatus;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 

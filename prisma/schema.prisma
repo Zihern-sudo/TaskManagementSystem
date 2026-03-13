@@ -50,6 +50,8 @@ model User {
   role          Role          @default(member)
   status        AccountStatus @default(pending)
 
+  avatarUrl     String?
+
   // Temporary tokens
   inviteToken       String?   @unique
   inviteTokenExpiry DateTime?

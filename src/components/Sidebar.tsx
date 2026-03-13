@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SessionUser } from "@/types";
 
 interface SidebarProps {
@@ -39,14 +41,20 @@ const adminNavItems = [
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => { if (d.data?.user?.avatarUrl) setAvatarUrl(d.data.user.avatarUrl); })
+      .catch(() => null);
+  }, [pathname]); // re-fetch on navigation so profile page updates reflect immediately
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
   }
-
-  const allNavItems = user.role === "admin" ? [...navItems, ...adminNavItems] : navItems;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 flex flex-col z-30" style={{ backgroundColor: "#0747A6" }}>
@@ -120,8 +128,12 @@ export default function Sidebar({ user }: SidebarProps) {
             pathname === "/profile" ? "bg-white/20 text-white" : "hover:bg-white/10"
           }`}
         >
-          <div className="w-8 h-8 rounded-full bg-blue-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
-            {getInitials(user.name)}
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={user.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+            ) : (
+              getInitials(user.name)
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-white text-sm font-medium truncate">{user.name}</div>

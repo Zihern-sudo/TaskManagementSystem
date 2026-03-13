@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { AssignedUser } from "@/types";
 
 function getInitials(name: string) {
@@ -31,10 +32,23 @@ export default function AvatarGroup({ users, max = 3, size = "sm" }: AvatarGroup
         <div
           key={user.id}
           title={user.fullName}
-          className={`${dim} rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white font-bold shrink-0 ring-2 ring-white`}
+          className={`${dim} rounded-full shrink-0 ring-2 ring-white overflow-hidden flex items-center justify-center font-bold text-white ${
+            user.avatarUrl ? "" : AVATAR_COLORS[i % AVATAR_COLORS.length]
+          }`}
           style={{ marginLeft: i === 0 ? 0 : "-6px", zIndex: visible.length - i }}
         >
-          {getInitials(user.fullName)}
+          {user.avatarUrl ? (
+            <Image
+              src={user.avatarUrl}
+              alt={user.fullName}
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            getInitials(user.fullName)
+          )}
         </div>
       ))}
       {overflow > 0 && (

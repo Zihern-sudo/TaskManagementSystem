@@ -20,7 +20,7 @@ export const TASK_SELECT = {
   dueDate: true,
   assignees: {
     select: {
-      user: { select: { id: true, fullName: true, email: true } },
+      user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
     },
     orderBy: { assignedAt: "asc" as const },
   },

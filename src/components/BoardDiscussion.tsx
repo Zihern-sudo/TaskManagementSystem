@@ -265,10 +265,16 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   const [posting, setPosting] = useState(false);
 
   async function fetchComments() {
-    const res = await fetch("/api/board-comments");
-    const data = await res.json();
-    if (data.data?.comments) setComments(data.data.comments);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/board-comments");
+      if (!res.ok) { setLoading(false); return; }
+      const data = await res.json();
+      if (data.data?.comments) setComments(data.data.comments);
+    } catch {
+      // empty / non-JSON response
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { fetchComments(); }, []);

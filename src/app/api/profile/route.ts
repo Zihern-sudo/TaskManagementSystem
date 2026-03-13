@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: caller.id },
-    select: { id: true, fullName: true, email: true, role: true, status: true, createdAt: true },
+    select: { id: true, fullName: true, email: true, role: true, status: true, avatarUrl: true, createdAt: true },
   });
   if (!user) return fail("User not found.", 404);
 
