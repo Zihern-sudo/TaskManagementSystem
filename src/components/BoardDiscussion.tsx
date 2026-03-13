@@ -47,6 +47,7 @@ interface ReactionBarProps {
 
 function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
   const [picking, setPicking] = useState(false);
+  const [inFlight, setInFlight] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,13 +58,21 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  async function handleReact(emoji: string) {
+    if (inFlight) return;
+    setInFlight(emoji);
+    await onReact(commentId, emoji);
+    setInFlight(null);
+  }
+
   return (
     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
       {reactions.map((r) => (
         <button
           key={r.emoji}
-          onClick={() => onReact(commentId, r.emoji)}
-          className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all ${
+          onClick={() => handleReact(r.emoji)}
+          disabled={inFlight === r.emoji}
+          className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
             r.reacted
               ? "bg-blue-100 border-blue-300 text-blue-700 font-medium"
               : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
@@ -77,7 +86,8 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
       <div ref={ref} className="relative">
         <button
           onClick={() => setPicking(!picking)}
-          className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+          disabled={!!inFlight}
+          className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -88,8 +98,9 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
             {EMOJIS.map((e) => (
               <button
                 key={e}
-                onClick={() => { onReact(commentId, e); setPicking(false); }}
-                className="text-lg hover:scale-125 transition-transform"
+                onClick={() => { handleReact(e); setPicking(false); }}
+                disabled={!!inFlight}
+                className="text-lg hover:scale-125 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {e}
               </button>
