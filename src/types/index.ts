@@ -16,7 +16,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: string | null;
-  assignedUser?: AssignedUser | null;
+  assignees: AssignedUser[];
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +33,23 @@ export interface Comment {
   author: CommentAuthor;
   parentId?: string | null;
   replies?: Comment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BoardReaction {
+  emoji: string;
+  count: number;
+  reacted: boolean; // whether current user has reacted
+}
+
+export interface BoardComment {
+  id: string;
+  content: string;
+  author: CommentAuthor;
+  parentId?: string | null;
+  replies?: BoardComment[];
+  reactions: BoardReaction[];
   createdAt: string;
   updatedAt: string;
 }

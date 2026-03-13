@@ -1,0 +1,442 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { BoardComment, SessionUser } from "@/types";
+
+interface BoardDiscussionProps {
+  currentUser: SessionUser;
+}
+
+const EMOJIS = ["👍", "❤️", "🎉", "🔥", "😂", "🙌"];
+
+function getInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+const AVATAR_COLORS = [
+  "bg-indigo-500", "bg-blue-500", "bg-purple-500",
+  "bg-pink-500", "bg-teal-500", "bg-orange-500",
+];
+
+function avatarColor(name: string) {
+  let hash = 0;
+  for (const c of name) hash = (hash << 5) - hash + c.charCodeAt(0);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+// ── Reaction Bar ───────────────────────────────────────────────────────────
+
+interface ReactionBarProps {
+  commentId: string;
+  reactions: BoardComment["reactions"];
+  onReact: (commentId: string, emoji: string) => Promise<void>;
+}
+
+function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
+  const [picking, setPicking] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setPicking(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+      {reactions.map((r) => (
+        <button
+          key={r.emoji}
+          onClick={() => onReact(commentId, r.emoji)}
+          className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all ${
+            r.reacted
+              ? "bg-blue-100 border-blue-300 text-blue-700 font-medium"
+              : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+          }`}
+        >
+          {r.emoji} <span>{r.count}</span>
+        </button>
+      ))}
+
+      {/* Emoji picker trigger */}
+      <div ref={ref} className="relative">
+        <button
+          onClick={() => setPicking(!picking)}
+          className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        {picking && (
+          <div className="absolute bottom-full mb-1 left-0 bg-white rounded-xl border border-gray-200 shadow-lg p-2 flex gap-1 z-10">
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                onClick={() => { onReact(commentId, e); setPicking(false); }}
+                className="text-lg hover:scale-125 transition-transform"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Comment Item ───────────────────────────────────────────────────────────
+
+interface CommentItemProps {
+  comment: BoardComment;
+  currentUser: SessionUser;
+  isReply?: boolean;
+  onReply: (parentId: string, content: string) => Promise<void>;
+  onEdit: (id: string, content: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onReact: (commentId: string, emoji: string) => Promise<void>;
+}
+
+function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete, onReact }: CommentItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [replyContent, setReplyContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const canModify = comment.author.id === currentUser.id || currentUser.role === "admin";
+
+  async function submitEdit() {
+    if (!editContent.trim()) return;
+    setSaving(true);
+    await onEdit(comment.id, editContent.trim());
+    setSaving(false);
+    setEditing(false);
+  }
+
+  async function submitReply() {
+    if (!replyContent.trim()) return;
+    setSaving(true);
+    await onReply(comment.id, replyContent.trim());
+    setSaving(false);
+    setReplying(false);
+    setReplyContent("");
+  }
+
+  return (
+    <div className={`flex gap-3 ${isReply ? "pl-10" : ""}`}>
+      <div
+        className={`w-8 h-8 rounded-full ${avatarColor(comment.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5`}
+      >
+        {getInitials(comment.author.fullName)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-900">{comment.author.fullName}</span>
+              {isReply && (
+                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">reply</span>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 shrink-0">{timeAgo(comment.createdAt)}</span>
+          </div>
+          {editing ? (
+            <div className="mt-1">
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={2}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50"
+              />
+              <div className="flex gap-2 mt-2">
+                <button onClick={submitEdit} disabled={saving} className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => { setEditing(false); setEditContent(comment.content); }} className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+          )}
+        </div>
+
+        {/* Reactions */}
+        {!editing && (
+          <ReactionBar commentId={comment.id} reactions={comment.reactions} onReact={onReact} />
+        )}
+
+        {/* Actions */}
+        {!editing && (
+          <div className="flex items-center gap-3 mt-1 px-1">
+            {!isReply && (
+              <button
+                onClick={() => setReplying(!replying)}
+                className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Reply {comment.replies && comment.replies.length > 0 ? `(${comment.replies.length})` : ""}
+              </button>
+            )}
+            {canModify && (
+              <>
+                <button onClick={() => setEditing(true)} className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors">
+                  Edit
+                </button>
+                <button onClick={() => onDelete(comment.id)} className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors">
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Reply input */}
+        {replying && (
+          <div className="mt-3 flex gap-2 pl-2">
+            <textarea
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
+              rows={2}
+              placeholder="Write a reply... (Enter to post)"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
+            />
+            <div className="flex flex-col gap-1">
+              <button onClick={submitReply} disabled={saving || !replyContent.trim()} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+                {saving ? "..." : "Send"}
+              </button>
+              <button onClick={() => { setReplying(false); setReplyContent(""); }} className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Replies */}
+        {!isReply && comment.replies && comment.replies.length > 0 && (
+          <div className="mt-3 space-y-3">
+            {comment.replies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                currentUser={currentUser}
+                isReply
+                onReply={onReply}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onReact={onReact}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Board Discussion ───────────────────────────────────────────────────────
+
+export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
+  const [comments, setComments] = useState<BoardComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  async function fetchComments() {
+    const res = await fetch("/api/board-comments");
+    const data = await res.json();
+    if (data.data?.comments) setComments(data.data.comments);
+    setLoading(false);
+  }
+
+  useEffect(() => { fetchComments(); }, []);
+
+  async function handlePost() {
+    if (!newComment.trim()) return;
+    setPosting(true);
+    await fetch("/api/board-comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: newComment.trim() }),
+    });
+    setNewComment("");
+    await fetchComments();
+    setPosting(false);
+  }
+
+  async function handleReply(parentId: string, content: string) {
+    await fetch("/api/board-comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, parentId }),
+    });
+    await fetchComments();
+  }
+
+  async function handleEdit(id: string, content: string) {
+    await fetch(`/api/board-comments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    await fetchComments();
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this comment?")) return;
+    await fetch(`/api/board-comments/${id}`, { method: "DELETE" });
+    await fetchComments();
+  }
+
+  async function handleReact(commentId: string, emoji: string) {
+    await fetch(`/api/board-comments/${commentId}/react`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    });
+    await fetchComments();
+  }
+
+  const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
+
+  return (
+    <div className="mx-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Header */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+              </svg>
+            </div>
+            <div className="text-left">
+              <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                Board Discussion
+                {totalCount > 0 && (
+                  <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 font-medium">
+                    {totalCount}
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">Project-wide team discussion</p>
+            </div>
+          </div>
+          <svg
+            className={`w-5 h-5 text-gray-400 transition-transform ${collapsed ? "" : "rotate-180"}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {!collapsed && (
+          <div className="border-t border-gray-100">
+            {/* New comment input */}
+            <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+              <div className="flex gap-3">
+                <div
+                  className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5`}
+                >
+                  {getInitials(currentUser.name)}
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
+                    rows={2}
+                    placeholder="Share an update, ask a question, or start a discussion... (Enter to post)"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white transition"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-gray-400">Shift+Enter for new line</p>
+                    <button
+                      onClick={handlePost}
+                      disabled={posting || !newComment.trim()}
+                      className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      {posting ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Posting...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                          </svg>
+                          Post
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Comments list */}
+            <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
+                  <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Loading discussion...
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="flex flex-col items-center py-10 gap-3 text-gray-400">
+                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <p className="text-sm">No discussion yet. Start the conversation!</p>
+                </div>
+              ) : (
+                comments.map((c) => (
+                  <CommentItem
+                    key={c.id}
+                    comment={c}
+                    currentUser={currentUser}
+                    onReply={handleReply}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onReact={handleReact}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

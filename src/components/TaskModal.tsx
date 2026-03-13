@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, STATUS_LABELS } from "@/types";
 import CommentSection from "./CommentSection";
 
@@ -17,13 +17,151 @@ interface TaskModalProps {
 const STATUSES: TaskStatus[] = ["not_started", "in_progress", "in_review", "completed"];
 const PRIORITIES: TaskPriority[] = ["low", "medium", "high", "critical"];
 
+function getInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+const AVATAR_COLORS = ["bg-indigo-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-teal-500"];
+
+// ── Multi-select Assignee Picker ───────────────────────────────────────────
+
+interface AssigneePickerProps {
+  users: AssignedUser[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filtered = users.filter((u) =>
+    u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  function toggle(id: string) {
+    if (selected.includes(id)) {
+      onChange(selected.filter((x) => x !== id));
+    } else if (selected.length < 5) {
+      onChange([...selected, id]);
+    }
+  }
+
+  const selectedUsers = users.filter((u) => selected.includes(u.id));
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white flex items-center justify-between gap-2 min-h-[42px]"
+      >
+        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          {selectedUsers.length === 0 ? (
+            <span className="text-gray-400">Unassigned</span>
+          ) : (
+            selectedUsers.map((u, i) => (
+              <span
+                key={u.id}
+                className="flex items-center gap-1 bg-blue-50 text-blue-700 text-xs rounded-full px-2 py-0.5"
+              >
+                <span
+                  className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white`}
+                  style={{ fontSize: "8px", fontWeight: "bold" }}
+                >
+                  {getInitials(u.fullName)}
+                </span>
+                {u.fullName.split(" ")[0]}
+                <span
+                  className="ml-0.5 cursor-pointer hover:text-red-500"
+                  onClick={(e) => { e.stopPropagation(); toggle(u.id); }}
+                >
+                  ×
+                </span>
+              </span>
+            ))
+          )}
+        </div>
+        <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="p-2 border-b border-gray-100">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search members..."
+              className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-3">No members found</p>
+            ) : (
+              filtered.map((u, i) => {
+                const checked = selected.includes(u.id);
+                return (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => toggle(u.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      !checked && selected.length >= 5 ? "opacity-40 cursor-not-allowed" : ""
+                    }`}
+                    disabled={!checked && selected.length >= 5}
+                  >
+                    <div className={`w-7 h-7 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      {getInitials(u.fullName)}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-gray-900">{u.fullName}</p>
+                      <p className="text-xs text-gray-400">{u.email}</p>
+                    </div>
+                    {checked && (
+                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+          {selected.length >= 5 && (
+            <div className="px-3 py-2 border-t border-gray-100 bg-orange-50 text-xs text-orange-600">
+              Maximum 5 assignees reached
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Task Modal ─────────────────────────────────────────────────────────────
+
 export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole }: TaskModalProps) {
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "not_started");
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "medium");
   const [dueDate, setDueDate] = useState(task?.dueDate ? task.dueDate.slice(0, 10) : "");
-  const [assignedUserId, setAssignedUserId] = useState(task?.assignedUser?.id ?? "");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task?.assignees?.map((u) => u.id) ?? []);
   const [users, setUsers] = useState<AssignedUser[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -47,7 +185,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
         status,
         priority,
         dueDate: dueDate || null,
-        assignedUserId: assignedUserId || null,
+        assigneeIds,
       };
 
       const res = await fetch(isNew ? "/api/tasks" : `/api/tasks/${task!.id}`, {
@@ -149,7 +287,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
+                  rows={3}
                   className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   placeholder="Add a description..."
                 />
@@ -183,30 +321,23 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 </div>
               </div>
 
-              {/* Row: Due Date + Assignee */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Assignee</label>
-                  <select
-                    value={assignedUserId}
-                    onChange={(e) => setAssignedUserId(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="">Unassigned</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.fullName}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
+              </div>
+
+              {/* Assignees */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Assignees <span className="text-gray-400 font-normal">(up to 5)</span>
+                </label>
+                <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
               </div>
 
               {error && (
