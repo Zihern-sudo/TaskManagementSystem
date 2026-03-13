@@ -79,6 +79,7 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
         cmp = (a.dueDate ? new Date(a.dueDate).getTime() : Infinity) -
               (b.dueDate ? new Date(b.dueDate).getTime() : Infinity);
         break;
+      case "idx":
       case "createdAt":
         cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         break;

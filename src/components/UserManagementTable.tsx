@@ -47,6 +47,7 @@ function sortUsers(users: User[], field: SortField, dir: SortDir): User[] {
       case "email": cmp = a.email.localeCompare(b.email); break;
       case "role": cmp = a.role.localeCompare(b.role); break;
       case "status": cmp = a.status.localeCompare(b.status); break;
+      case "idx":
       case "createdAt": cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(); break;
     }
     return dir === "asc" ? cmp : -cmp;
