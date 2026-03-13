@@ -7,14 +7,14 @@ const BOARD_COMMENT_SELECT = {
   id: true,
   content: true,
   parentId: true,
-  author: { select: { id: true, fullName: true, email: true } },
+  author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
   reactions: { select: { emoji: true, userId: true } },
   replies: {
     select: {
       id: true,
       content: true,
       parentId: true,
-      author: { select: { id: true, fullName: true, email: true } },
+      author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
       reactions: { select: { emoji: true, userId: true } },
       replies: { select: { id: true } }, // depth guard
       createdAt: true,

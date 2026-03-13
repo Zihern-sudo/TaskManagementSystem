@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, STATUS_LABELS } from "@/types";
 import CommentSection from "./CommentSection";
 
@@ -76,10 +77,12 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
                 className="flex items-center gap-1 bg-blue-50 text-blue-700 text-xs rounded-full px-2 py-0.5"
               >
                 <span
-                  className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white`}
+                  className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white overflow-hidden shrink-0`}
                   style={{ fontSize: "8px", fontWeight: "bold" }}
                 >
-                  {getInitials(u.fullName)}
+                  {u.avatarUrl
+                    ? <Image src={u.avatarUrl} alt={u.fullName} width={16} height={16} className="w-full h-full object-cover" unoptimized />
+                    : getInitials(u.fullName)}
                 </span>
                 {u.fullName.split(" ")[0]}
                 <span
@@ -125,8 +128,10 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
                     }`}
                     disabled={!checked && selected.length >= 5}
                   >
-                    <div className={`w-7 h-7 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
-                      {getInitials(u.fullName)}
+                    <div className={`w-7 h-7 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}>
+                      {u.avatarUrl
+                        ? <Image src={u.avatarUrl} alt={u.fullName} width={28} height={28} className="w-full h-full object-cover" unoptimized />
+                        : getInitials(u.fullName)}
                     </div>
                     <div className="flex-1 text-left">
                       <p className="font-medium text-gray-900">{u.fullName}</p>
