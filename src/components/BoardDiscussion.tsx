@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { BoardComment, SessionUser } from "@/types";
 
 interface BoardDiscussionProps {
@@ -153,9 +154,11 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
   return (
     <div className={`flex gap-3 ${isReply ? "pl-10" : ""}`}>
       <div
-        className={`w-8 h-8 rounded-full ${avatarColor(comment.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5`}
+        className={`w-8 h-8 rounded-full ${avatarColor(comment.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
       >
-        {getInitials(comment.author.fullName)}
+        {comment.author.avatarUrl
+          ? <Image src={comment.author.avatarUrl} alt={comment.author.fullName} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+          : getInitials(comment.author.fullName)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
@@ -274,6 +277,14 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => { if (d.data?.user?.avatarUrl) setCurrentUserAvatar(d.data.user.avatarUrl); })
+      .catch(() => null);
+  }, []);
 
   async function fetchComments() {
     try {
@@ -378,9 +389,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
             <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
               <div className="flex gap-3">
                 <div
-                  className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5`}
+                  className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
                 >
-                  {getInitials(currentUser.name)}
+                  {currentUserAvatar
+                    ? <Image src={currentUserAvatar} alt={currentUser.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
+                    : getInitials(currentUser.name)}
                 </div>
                 <div className="flex-1">
                   <textarea

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const users = await db.user.findMany({
     where: { status: "active" },
-    select: { id: true, fullName: true, email: true },
+    select: { id: true, fullName: true, email: true, avatarUrl: true },
     orderBy: { fullName: "asc" },
   });
 
