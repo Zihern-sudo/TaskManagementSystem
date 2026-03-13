@@ -98,7 +98,7 @@ export default function LoginPage() {
             all in one place
           </h1>
           <p className="text-blue-200 text-lg leading-relaxed mb-10 max-w-sm">
-            Plan, track, and release great software with your team using our Jira-inspired task management board.
+            Plan, track, and release great software with your team using our task management board.
           </p>
 
           {/* Feature pills */}
