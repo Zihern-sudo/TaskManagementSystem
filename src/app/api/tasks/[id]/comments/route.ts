@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
+import { sendMail, buildMentionEmail } from "@/lib/mail";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     return fail("Request body must be valid JSON.");
   }
 
-  const { content, parentId } = (body ?? {}) as Record<string, unknown>;
+  const { content, parentId, mentionedUserIds } = (body ?? {}) as Record<string, unknown>;
 
   // ── Validate ──────────────────────────────────────────────────────────────
   const errors: Record<string, string[]> = {};
@@ -130,6 +131,37 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       updatedAt: true,
     },
   });
+
+  // ── Mention email notifications (fire-and-forget) ─────────────────────────
+  const mentionIds = Array.isArray(mentionedUserIds)
+    ? (mentionedUserIds as unknown[]).filter((id): id is string => typeof id === "string")
+    : [];
+
+  if (mentionIds.length > 0) {
+    const uniqueIds = [...new Set(mentionIds)].filter((id) => id !== caller.id);
+    if (uniqueIds.length > 0) {
+      db.user
+        .findMany({
+          where: { id: { in: uniqueIds }, status: "active" },
+          select: { email: true },
+        })
+        .then((mentionedUsers) => {
+          const baseUrl =
+            process.env.NEXTAUTH_URL ??
+            process.env.NEXT_PUBLIC_APP_URL ??
+            "http://localhost:3000";
+          const { subject, html } = buildMentionEmail(
+            caller.name,
+            (content as string).trim(),
+            baseUrl
+          );
+          for (const u of mentionedUsers) {
+            sendMail({ to: u.email, subject, html }).catch(() => null);
+          }
+        })
+        .catch(() => null);
+    }
+  }
 
   return ok("Comment posted successfully.", { comment }, 201);
 }

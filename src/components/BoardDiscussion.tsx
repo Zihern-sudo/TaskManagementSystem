@@ -3,22 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { BoardComment, TaskCommentFeed, SessionUser } from "@/types";
+import {
+  MentionTextarea,
+  renderMentions,
+  ActiveUser,
+} from "@/components/MentionTextarea";
 
 interface BoardDiscussionProps {
   currentUser: SessionUser;
 }
 
-interface ActiveUser {
-  id: string;
-  fullName: string;
-  email: string;
-  avatarUrl?: string | null;
-}
-
 const EMOJIS = ["👍", "❤️", "🎉", "🔥", "😂", "🙌"];
 
 function getInitials(name: string) {
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function timeAgo(iso: string) {
@@ -31,241 +34,25 @@ function timeAgo(iso: string) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 const AVATAR_COLORS = [
-  "bg-indigo-500", "bg-blue-500", "bg-purple-500",
-  "bg-pink-500", "bg-teal-500", "bg-orange-500",
+  "bg-indigo-500",
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-teal-500",
+  "bg-orange-500",
 ];
 
 function avatarColor(name: string) {
   let hash = 0;
   for (const c of name) hash = (hash << 5) - hash + c.charCodeAt(0);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-// ── Render content with @mention highlights ─────────────────────────────────
-
-function renderContent(content: string, activeUsers: ActiveUser[]) {
-  if (!content.includes("@") || activeUsers.length === 0) {
-    return <span className="whitespace-pre-wrap">{content}</span>;
-  }
-
-  const escaped = activeUsers.map((u) =>
-    u.fullName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  );
-  const regex = new RegExp(`@(${escaped.join("|")})`, "g");
-
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(content)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(
-        <span key={`t-${lastIndex}`} className="whitespace-pre-wrap">
-          {content.slice(lastIndex, match.index)}
-        </span>
-      );
-    }
-    parts.push(
-      <span
-        key={`m-${match.index}`}
-        className="inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-tight"
-      >
-        @{match[1]}
-      </span>
-    );
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < content.length) {
-    parts.push(
-      <span key={`t-end`} className="whitespace-pre-wrap">
-        {content.slice(lastIndex)}
-      </span>
-    );
-  }
-
-  return <>{parts}</>;
-}
-
-// ── MentionTextarea ──────────────────────────────────────────────────────────
-
-interface MentionTextareaProps {
-  value: string;
-  onChange: (value: string) => void;
-  onMentionedUsersChange: (userIds: string[]) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  activeUsers: ActiveUser[];
-  rows?: number;
-  placeholder?: string;
-  className?: string;
-  disabled?: boolean;
-}
-
-function MentionTextarea({
-  value,
-  onChange,
-  onMentionedUsersChange,
-  onKeyDown,
-  activeUsers,
-  rows = 2,
-  placeholder,
-  className,
-  disabled,
-}: MentionTextareaProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionStart, setMentionStart] = useState<number>(-1);
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
-
-  const filteredUsers =
-    mentionQuery !== null
-      ? activeUsers
-          .filter((u) =>
-            u.fullName.toLowerCase().includes(mentionQuery.toLowerCase())
-          )
-          .slice(0, 6)
-      : [];
-
-  // Reset tracked mentions when the field is cleared
-  useEffect(() => {
-    if (!value.trim()) {
-      setMentionedUserIds([]);
-      onMentionedUsersChange([]);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    const val = e.target.value;
-    const cursor = e.target.selectionStart ?? val.length;
-    onChange(val);
-
-    const textBeforeCursor = val.slice(0, cursor);
-    // Detect @<query> pattern at end of text-before-cursor
-    const match = textBeforeCursor.match(/(^|[\s\n])@([^\s@]*)$/);
-    if (match) {
-      const atIdx = textBeforeCursor.lastIndexOf("@");
-      setMentionStart(atIdx);
-      setMentionQuery(match[2]);
-      setHighlightedIndex(0);
-    } else {
-      setMentionQuery(null);
-      setMentionStart(-1);
-    }
-  }
-
-  function selectUser(user: ActiveUser) {
-    const cursor = textareaRef.current?.selectionStart ?? value.length;
-    const before = value.slice(0, mentionStart);
-    const after = value.slice(cursor);
-    const insertText = `@${user.fullName} `;
-    const newVal = before + insertText + after;
-    onChange(newVal);
-
-    const newIds = [...mentionedUserIds, user.id];
-    setMentionedUserIds(newIds);
-    onMentionedUsersChange(newIds);
-
-    setMentionQuery(null);
-    setMentionStart(-1);
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newPos = before.length + insertText.length;
-        textareaRef.current.setSelectionRange(newPos, newPos);
-        textareaRef.current.focus();
-      }
-    }, 0);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (mentionQuery !== null && filteredUsers.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedIndex((i) => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        selectUser(filteredUsers[highlightedIndex]);
-        return;
-      }
-      if (e.key === "Escape") {
-        setMentionQuery(null);
-        return;
-      }
-    }
-    onKeyDown?.(e);
-  }
-
-  return (
-    <div className="relative w-full">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        rows={rows}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={className}
-      />
-
-      {/* @mention dropdown */}
-      {mentionQuery !== null && filteredUsers.length > 0 && (
-        <div className="absolute bottom-full mb-1 left-0 w-64 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden">
-          <div className="px-3 py-1.5 border-b border-gray-100 bg-gray-50">
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-              Mention a teammate
-            </span>
-          </div>
-          {filteredUsers.map((user, i) => (
-            <button
-              key={user.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                selectUser(user);
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                i === highlightedIndex
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <div
-                className={`w-7 h-7 rounded-full ${avatarColor(user.fullName)} flex items-center justify-center text-white text-[11px] font-bold shrink-0 overflow-hidden`}
-              >
-                {user.avatarUrl ? (
-                  <Image
-                    src={user.avatarUrl}
-                    alt={user.fullName}
-                    width={28}
-                    height={28}
-                    className="w-full h-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  getInitials(user.fullName)
-                )}
-              </div>
-              <span className="text-sm font-medium truncate">{user.fullName}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ── Reaction Bar ─────────────────────────────────────────────────────────────
@@ -283,7 +70,8 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setPicking(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setPicking(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -322,8 +110,18 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
           disabled={!!inFlight}
           className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         </button>
         {picking && (
@@ -331,7 +129,10 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
             {EMOJIS.map((e) => (
               <button
                 key={e}
-                onClick={() => { handleReact(e); setPicking(false); }}
+                onClick={() => {
+                  handleReact(e);
+                  setPicking(false);
+                }}
                 disabled={!!inFlight}
                 className="text-lg hover:scale-125 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -352,7 +153,11 @@ interface CommentItemProps {
   currentUser: SessionUser;
   activeUsers: ActiveUser[];
   isReply?: boolean;
-  onReply: (parentId: string, content: string, mentionedUserIds: string[]) => Promise<void>;
+  onReply: (
+    parentId: string,
+    content: string,
+    mentionedUserIds: string[]
+  ) => Promise<void>;
   onEdit: (id: string, content: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReact: (commentId: string, emoji: string) => Promise<void>;
@@ -374,10 +179,11 @@ function CommentItem({
   const [replying, setReplying] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [replyContent, setReplyContent] = useState("");
-  const [replyMentionedUserIds, setReplyMentionedUserIds] = useState<string[]>([]);
+  const [replyMentionedIds, setReplyMentionedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  const canModify = comment.author.id === currentUser.id || currentUser.role === "admin";
+  const canModify =
+    comment.author.id === currentUser.id || currentUser.role === "admin";
 
   async function submitEdit() {
     if (!editContent.trim()) return;
@@ -390,17 +196,19 @@ function CommentItem({
   async function submitReply() {
     if (!replyContent.trim()) return;
     setSaving(true);
-    await onReply(comment.id, replyContent.trim(), replyMentionedUserIds);
+    await onReply(comment.id, replyContent.trim(), replyMentionedIds);
     setSaving(false);
     setReplying(false);
     setReplyContent("");
-    setReplyMentionedUserIds([]);
+    setReplyMentionedIds([]);
   }
 
   return (
     <div className={`flex gap-3 ${isReply ? "pl-10" : ""}`}>
       <div
-        className={`w-8 h-8 rounded-full ${avatarColor(comment.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+        className={`w-8 h-8 rounded-full ${avatarColor(
+          comment.author.fullName
+        )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
       >
         {comment.author.avatarUrl ? (
           <Image
@@ -418,25 +226,37 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         <div
           className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${
-            comment.pinned ? "border-amber-200 bg-amber-50/30" : "border-gray-100"
+            comment.pinned
+              ? "border-amber-200 bg-amber-50/30"
+              : "border-gray-100"
           }`}
         >
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-gray-900">{comment.author.fullName}</span>
+              <span className="text-sm font-semibold text-gray-900">
+                {comment.author.fullName}
+              </span>
               {isReply && (
-                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">reply</span>
+                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                  reply
+                </span>
               )}
               {comment.pinned && !isReply && (
                 <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full border border-amber-200">
-                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-2.5 h-2.5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                   </svg>
                   Pinned
                 </span>
               )}
             </div>
-            <span className="text-xs text-gray-400 shrink-0">{timeAgo(comment.createdAt)}</span>
+            <span className="text-xs text-gray-400 shrink-0">
+              {timeAgo(comment.createdAt)}
+            </span>
           </div>
 
           {editing ? (
@@ -456,7 +276,10 @@ function CommentItem({
                   {saving ? "Saving..." : "Save"}
                 </button>
                 <button
-                  onClick={() => { setEditing(false); setEditContent(comment.content); }}
+                  onClick={() => {
+                    setEditing(false);
+                    setEditContent(comment.content);
+                  }}
                   className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
                 >
                   Cancel
@@ -465,14 +288,18 @@ function CommentItem({
             </div>
           ) : (
             <p className="text-sm text-gray-700 leading-relaxed">
-              {renderContent(comment.content, activeUsers)}
+              {renderMentions(comment.content, activeUsers)}
             </p>
           )}
         </div>
 
         {/* Reactions */}
         {!editing && (
-          <ReactionBar commentId={comment.id} reactions={comment.reactions} onReact={onReact} />
+          <ReactionBar
+            commentId={comment.id}
+            reactions={comment.reactions}
+            onReact={onReact}
+          />
         )}
 
         {/* Actions */}
@@ -483,8 +310,18 @@ function CommentItem({
                 onClick={() => setReplying(!replying)}
                 className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
                 </svg>
                 Reply{" "}
                 {comment.replies && comment.replies.length > 0
@@ -501,7 +338,11 @@ function CommentItem({
                     : "text-gray-400 hover:text-amber-600"
                 }`}
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-3 h-3"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                 </svg>
                 {comment.pinned ? "Unpin" : "Pin"}
@@ -526,13 +367,13 @@ function CommentItem({
           </div>
         )}
 
-        {/* Reply input with @mention support */}
+        {/* Reply input */}
         {replying && (
           <div className="mt-3 flex gap-2 pl-2">
             <MentionTextarea
               value={replyContent}
               onChange={setReplyContent}
-              onMentionedUsersChange={setReplyMentionedUserIds}
+              onMentionedUsersChange={setReplyMentionedIds}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -541,7 +382,7 @@ function CommentItem({
               }}
               activeUsers={activeUsers}
               rows={2}
-              placeholder="Write a reply... (@ to mention, Enter to post)"
+              placeholder="Reply... (@ to mention, Enter to post)"
               className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
             />
             <div className="flex flex-col gap-1">
@@ -553,7 +394,10 @@ function CommentItem({
                 {saving ? "..." : "Send"}
               </button>
               <button
-                onClick={() => { setReplying(false); setReplyContent(""); }}
+                onClick={() => {
+                  setReplying(false);
+                  setReplyContent("");
+                }}
                 className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100"
               >
                 Cancel
@@ -562,7 +406,7 @@ function CommentItem({
           </div>
         )}
 
-        {/* Replies */}
+        {/* Nested replies */}
         {!isReply && comment.replies && comment.replies.length > 0 && (
           <div className="mt-3 space-y-3">
             {comment.replies.map((reply) => (
@@ -588,7 +432,10 @@ function CommentItem({
 
 // ── Optimistic reaction helpers ───────────────────────────────────────────────
 
-function toggleReactionOnComment(comment: BoardComment, emoji: string): BoardComment {
+function toggleReactionOnComment(
+  comment: BoardComment,
+  emoji: string
+): BoardComment {
   const existing = comment.reactions.find((r) => r.emoji === emoji);
   let newReactions: BoardComment["reactions"];
 
@@ -597,7 +444,9 @@ function toggleReactionOnComment(comment: BoardComment, emoji: string): BoardCom
       existing.count <= 1
         ? comment.reactions.filter((r) => r.emoji !== emoji)
         : comment.reactions.map((r) =>
-            r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r
+            r.emoji === emoji
+              ? { ...r, count: r.count - 1, reacted: false }
+              : r
           );
   } else if (existing) {
     newReactions = comment.reactions.map((r) =>
@@ -631,7 +480,9 @@ function applyOptimisticReaction(
 
 // ── Board Discussion ──────────────────────────────────────────────────────────
 
-export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
+export default function BoardDiscussion({
+  currentUser,
+}: BoardDiscussionProps) {
   const [comments, setComments] = useState<BoardComment[]>([]);
   const [taskComments, setTaskComments] = useState<TaskCommentFeed[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
@@ -641,10 +492,12 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   const [newComment, setNewComment] = useState("");
   const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
   const [posting, setPosting] = useState(false);
-  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(
+    null
+  );
 
-  // Fetch current user avatar + active users for @mention
   useEffect(() => {
+    // Fetch current user's avatar
     fetch("/api/profile")
       .then((r) => r.json())
       .then((d) => {
@@ -652,6 +505,7 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
       })
       .catch(() => null);
 
+    // Fetch active users for @mention dropdown
     fetch("/api/users/active")
       .then((r) => r.json())
       .then((d) => {
@@ -663,18 +517,23 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   async function fetchComments() {
     try {
       const res = await fetch("/api/board-comments");
-      if (!res.ok) { setLoading(false); return; }
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       if (data.data?.comments) setComments(data.data.comments);
       if (data.data?.taskComments) setTaskComments(data.data.taskComments);
     } catch {
-      // empty / non-JSON response
+      // non-JSON or network error
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { fetchComments(); }, []);
+  useEffect(() => {
+    fetchComments();
+  }, []);
 
   async function handlePost() {
     if (!newComment.trim()) return;
@@ -698,7 +557,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
     }
   }
 
-  async function handleReply(parentId: string, content: string, replyMentionedUserIds: string[]) {
+  async function handleReply(
+    parentId: string,
+    content: string,
+    replyMentionedUserIds: string[]
+  ) {
     await fetch("/api/board-comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -739,17 +602,28 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId
-          ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
+          ? {
+              ...c,
+              pinned: !c.pinned,
+              pinnedAt: !c.pinned ? new Date().toISOString() : null,
+            }
           : c
       )
     );
     try {
-      const res = await fetch(`/api/board-comments/${commentId}/pin`, { method: "POST" });
+      const res = await fetch(`/api/board-comments/${commentId}/pin`, {
+        method: "POST",
+      });
       if (!res.ok) {
+        // revert
         setComments((prev) =>
           prev.map((c) =>
             c.id === commentId
-              ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
+              ? {
+                  ...c,
+                  pinned: !c.pinned,
+                  pinnedAt: !c.pinned ? new Date().toISOString() : null,
+                }
               : c
           )
         );
@@ -760,7 +634,10 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
     }
   }
 
-  const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
+  const totalCount = comments.reduce(
+    (acc, c) => acc + 1 + (c.replies?.length ?? 0),
+    0
+  );
 
   return (
     <div className="mx-6 mb-6">
@@ -772,8 +649,18 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
-              <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+              <svg
+                className="w-4 h-4 text-blue-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+                />
               </svg>
             </div>
             <div className="text-left">
@@ -785,16 +672,25 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">Project-wide team discussion</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Project-wide team discussion
+              </p>
             </div>
           </div>
           <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${collapsed ? "" : "rotate-180"}`}
+            className={`w-5 h-5 text-gray-400 transition-transform ${
+              collapsed ? "" : "rotate-180"
+            }`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
 
@@ -803,7 +699,10 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
             {/* Tabs */}
             <div className="flex items-center gap-1 px-6 pt-3 pb-0 bg-white/60 border-b border-slate-200">
               <button
-                onClick={(e) => { e.stopPropagation(); setTab("discussion"); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTab("discussion");
+                }}
                 className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
                   tab === "discussion"
                     ? "border-blue-600 text-blue-600 bg-white"
@@ -814,7 +713,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                 {totalCount > 0 && (
                   <span
                     className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                      tab === "discussion" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                      tab === "discussion"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-500"
                     }`}
                   >
                     {totalCount}
@@ -822,7 +723,10 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                 )}
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setTab("activity"); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTab("activity");
+                }}
                 className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
                   tab === "activity"
                     ? "border-blue-600 text-blue-600 bg-white"
@@ -833,7 +737,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                 {taskComments.length > 0 && (
                   <span
                     className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                      tab === "activity" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                      tab === "activity"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-500"
                     }`}
                   >
                     {taskComments.length}
@@ -848,7 +754,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                 <div className="px-6 py-4 bg-white/60 border-b border-slate-200">
                   <div className="flex gap-3">
                     <div
-                      className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+                      className={`w-8 h-8 rounded-full ${avatarColor(
+                        currentUser.name
+                      )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
                     >
                       {currentUserAvatar ? (
                         <Image
@@ -881,7 +789,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                       />
                       <div className="flex items-center justify-between mt-2">
                         <p className="text-xs text-gray-400">
-                          Type <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">@</kbd> to mention a teammate · Shift+Enter for new line
+                          Type{" "}
+                          <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">
+                            @
+                          </kbd>{" "}
+                          to mention · Shift+Enter for new line
                         </p>
                         <button
                           onClick={handlePost}
@@ -890,16 +802,41 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                         >
                           {posting ? (
                             <>
-                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              <svg
+                                className="w-3.5 h-3.5 animate-spin"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                />
                               </svg>
                               Posting...
                             </>
                           ) : (
                             <>
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                />
                               </svg>
                               Post
                             </>
@@ -914,18 +851,45 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                 <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto bg-slate-50/80">
                   {loading ? (
                     <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
-                      <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      <svg
+                        className="w-4 h-4 animate-spin text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
                       </svg>
                       Loading discussion...
                     </div>
                   ) : comments.length === 0 ? (
                     <div className="flex flex-col items-center py-10 gap-3 text-gray-400">
-                      <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      <svg
+                        className="w-10 h-10 text-gray-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
                       </svg>
-                      <p className="text-sm">No discussion yet. Start the conversation!</p>
+                      <p className="text-sm">
+                        No discussion yet. Start the conversation!
+                      </p>
                     </div>
                   ) : (
                     comments.map((c) => (
@@ -950,16 +914,41 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
               <div className="px-6 py-4 space-y-3 max-h-[560px] overflow-y-auto bg-slate-50/80">
                 {loading ? (
                   <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
-                    <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                      className="w-4 h-4 animate-spin text-blue-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                     Loading activity...
                   </div>
                 ) : taskComments.length === 0 ? (
                   <div className="flex flex-col items-center py-10 gap-3 text-gray-400">
-                    <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <svg
+                      className="w-10 h-10 text-gray-300"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
                     </svg>
                     <p className="text-sm">No task comments yet.</p>
                   </div>
@@ -967,7 +956,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                   taskComments.map((tc) => (
                     <div key={tc.id} className="flex gap-3">
                       <div
-                        className={`w-8 h-8 rounded-full ${avatarColor(tc.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+                        className={`w-8 h-8 rounded-full ${avatarColor(
+                          tc.author.fullName
+                        )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
                       >
                         {tc.author.avatarUrl ? (
                           <Image
@@ -990,13 +981,25 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                                 {tc.author.fullName}
                               </span>
                               <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
-                                <svg className="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                <svg
+                                  className="w-2.5 h-2.5 shrink-0"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                                  />
                                 </svg>
                                 <span className="truncate">{tc.task.title}</span>
                               </span>
                             </div>
-                            <span className="text-xs text-gray-400 shrink-0">{timeAgo(tc.createdAt)}</span>
+                            <span className="text-xs text-gray-400 shrink-0">
+                              {timeAgo(tc.createdAt)}
+                            </span>
                           </div>
                           <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                             {tc.content}
