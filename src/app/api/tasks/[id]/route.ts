@@ -64,6 +64,12 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       parsedDueDate = new Date(data.dueDate as string);
       if (isNaN(parsedDueDate.getTime())) {
         errors.dueDate = ["dueDate must be a valid ISO date string or null."];
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (parsedDueDate < today) {
+          errors.dueDate = ["Due date cannot be in the past."];
+        }
       }
     }
   }

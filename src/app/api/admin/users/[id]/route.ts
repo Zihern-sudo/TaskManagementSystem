@@ -2,16 +2,16 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
-import { Role } from "@prisma/client";
+import { Role, AccountStatus } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ── PATCH /api/admin/users/[id] ────────────────────────────────────────────
 
 /**
- * Update a user's full name and/or role.
+ * Update a user's full name, role, and/or status.
  *
- * Body: { fullName?: string; role?: "admin" | "member" }
+ * Body: { fullName?: string; role?: "admin" | "member"; status?: "active" | "pending" }
  */
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
@@ -24,11 +24,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return fail("Request body must be valid JSON.");
   }
 
-  const { fullName, role } = (body ?? {}) as Record<string, unknown>;
+  const { fullName, role, status } = (body ?? {}) as Record<string, unknown>;
 
   // At least one field must be provided
-  if (fullName === undefined && role === undefined) {
-    return fail("Provide at least one field to update: fullName or role.");
+  if (fullName === undefined && role === undefined && status === undefined) {
+    return fail("Provide at least one field to update: fullName, role, or status.");
   }
 
   const errors: Record<string, string[]> = {};
@@ -41,8 +41,18 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     errors.role = ["Role must be either 'admin' or 'member'."];
   }
 
+  if (status !== undefined && status !== "active" && status !== "pending") {
+    errors.status = ["Status must be either 'active' or 'pending'."];
+  }
+
   if (Object.keys(errors).length > 0) {
     return fail("Validation failed.", 422, errors);
+  }
+
+  // ── Guard: cannot deactivate self ─────────────────────────────────────────
+  const caller = getRequestUser(req);
+  if (status !== undefined && caller?.id === id) {
+    return fail("You cannot change your own account status.", 403);
   }
 
   // ── Existence check ───────────────────────────────────────────────────────
@@ -57,6 +67,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     data: {
       ...(fullName !== undefined && { fullName: (fullName as string).trim() }),
       ...(role !== undefined && { role: role as Role }),
+      ...(status !== undefined && { status: status as AccountStatus }),
     },
     select: {
       id: true,
