@@ -52,6 +52,17 @@ export interface BoardComment {
   parentId?: string | null;
   replies?: BoardComment[];
   reactions: BoardReaction[];
+  pinned: boolean;
+  pinnedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskCommentFeed {
+  id: string;
+  content: string;
+  author: { id: string; fullName: string; avatarUrl?: string | null };
+  task: { id: string; title: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -65,6 +76,7 @@ export interface User {
   avatarUrl?: string | null;
   createdAt: string;
 }
+
 
 export interface SessionUser {
   id: string;

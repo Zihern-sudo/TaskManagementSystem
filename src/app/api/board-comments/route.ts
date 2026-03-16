@@ -7,6 +7,8 @@ const BOARD_COMMENT_SELECT = {
   id: true,
   content: true,
   parentId: true,
+  pinned: true,
+  pinnedAt: true,
   author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
   reactions: { select: { emoji: true, userId: true } },
   replies: {
@@ -14,6 +16,8 @@ const BOARD_COMMENT_SELECT = {
       id: true,
       content: true,
       parentId: true,
+      pinned: true,
+      pinnedAt: true,
       author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
       reactions: { select: { emoji: true, userId: true } },
       replies: { select: { id: true } }, // depth guard
@@ -49,6 +53,8 @@ function serializeBoardComment(
     parentId: comment.parentId ?? null,
     author: comment.author,
     reactions,
+    pinned: comment.pinned ?? false,
+    pinnedAt: comment.pinnedAt ? new Date(comment.pinnedAt).toISOString() : null,
     replies: (comment.replies ?? []).map((r: unknown) => serializeBoardComment(r, currentUserId)),
     createdAt: new Date(comment.createdAt).toISOString(),
     updatedAt: new Date(comment.updatedAt).toISOString(),
@@ -61,15 +67,42 @@ export async function GET(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
-  const comments = await db.boardComment.findMany({
+  const rawComments = await db.boardComment.findMany({
     where: { parentId: null },
     select: BOARD_COMMENT_SELECT,
     orderBy: { createdAt: "desc" },
     take: 50,
   });
 
+  // Pinned comments first (most recently pinned), then non-pinned by createdAt desc
+  const pinned = rawComments
+    .filter((c) => c.pinned)
+    .sort((a, b) => (b.pinnedAt?.getTime() ?? 0) - (a.pinnedAt?.getTime() ?? 0));
+  const nonPinned = rawComments.filter((c) => !c.pinned);
+  const sortedComments = [...pinned, ...nonPinned];
+
+  // Recent task comments across all tasks (for Task Activity tab)
+  const taskComments = await db.comment.findMany({
+    where: { parentId: null },
+    select: {
+      id: true,
+      content: true,
+      author: { select: { id: true, fullName: true, avatarUrl: true } },
+      task: { select: { id: true, title: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+  });
+
   return ok("Board comments retrieved.", {
-    comments: comments.map((c) => serializeBoardComment(c, caller.id)),
+    comments: sortedComments.map((c) => serializeBoardComment(c, caller.id)),
+    taskComments: taskComments.map((tc) => ({
+      ...tc,
+      createdAt: new Date(tc.createdAt).toISOString(),
+      updatedAt: new Date(tc.updatedAt).toISOString(),
+    })),
   });
 }
 

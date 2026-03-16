@@ -136,6 +136,9 @@ model BoardComment {
 
   reactions BoardReaction[]
 
+  pinned   Boolean   @default(false)
+  pinnedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

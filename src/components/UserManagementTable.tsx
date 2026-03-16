@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { User, UserRole, AccountStatus } from "@/types";
 
 const STATUS_STYLES: Record<AccountStatus, string> = {
@@ -410,9 +411,13 @@ export default function UserManagementTable() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-10 h-10 rounded-xl ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm`}
+                            className={`w-10 h-10 rounded-xl ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm overflow-hidden`}
                           >
-                            {getInitials(user.fullName)}
+                            {user.avatarUrl ? (
+                              <Image src={user.avatarUrl} alt={user.fullName} width={40} height={40} className="w-full h-full object-cover" unoptimized />
+                            ) : (
+                              getInitials(user.fullName)
+                            )}
                           </div>
                           <div>
                             <div className="font-semibold text-gray-900">{user.fullName}</div>

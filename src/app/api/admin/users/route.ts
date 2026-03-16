@@ -13,6 +13,7 @@ const USER_SELECT = {
   email: true,
   role: true,
   status: true,
+  avatarUrl: true,
   createdAt: true,
 } as const;
 

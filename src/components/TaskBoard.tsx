@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -231,9 +231,20 @@ interface ListViewProps {
   currentUserRole: string;
 }
 
+const PAGE_SIZE = 10;
+
 function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [page, setPage] = useState(1);
+  const prevTasksKey = useRef(tasks.map((t) => t.id).join(","));
+
+  // Reset to page 1 whenever the visible task set changes (due to filtering)
+  const tasksKey = tasks.map((t) => t.id).join(",");
+  if (prevTasksKey.current !== tasksKey) {
+    prevTasksKey.current = tasksKey;
+    if (page !== 1) setPage(1);
+  }
 
   function handleSort(field: SortField) {
     if (sortField !== field) {
@@ -242,9 +253,13 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
     } else {
       setSortDir((prev) => (prev === "none" ? "asc" : prev === "asc" ? "desc" : "none"));
     }
+    setPage(1);
   }
 
   const sorted = sortTasks(tasks, sortField, sortDir);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   function canModify(task: Task) {
     return currentUserRole === "admin" || task.assignees.some((a) => a.id === currentUserId);
@@ -278,12 +293,14 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
               </td>
             </tr>
           ) : (
-            sorted.map((task, idx) => (
+            paginated.map((task, idx) => {
+              const rowNum = (currentPage - 1) * PAGE_SIZE + idx + 1;
+              return (
               <tr
                 key={task.id}
                 className={`border-b border-gray-100 hover:bg-blue-50/50 transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""}`}
               >
-                <td className="px-4 py-3 text-gray-400 text-xs font-mono">{idx + 1}</td>
+                <td className="px-4 py-3 text-gray-400 text-xs font-mono">{rowNum}</td>
                 <td className="px-4 py-3">
                   <div
                     className="flex items-center gap-2 cursor-pointer"
@@ -367,10 +384,60 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                   </div>
                 </td>
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+          <span className="text-xs text-gray-500">
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sorted.length)} of {sorted.length} tasks
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
+            >
+              ← Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                if (i > 0 && (arr[i - 1] as number) !== p - 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, i) =>
+                item === "..." ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400 select-none">…</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item as number)}
+                    className={`w-7 h-7 text-xs rounded-lg font-medium transition-colors ${
+                      item === currentPage
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
