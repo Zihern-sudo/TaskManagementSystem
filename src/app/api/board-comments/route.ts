@@ -3,38 +3,46 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 
+// ── Select shapes ──────────────────────────────────────────────────────────
+
+const AUTHOR_SELECT = { id: true, fullName: true, email: true, avatarUrl: true } as const;
+const REACTION_SELECT = { emoji: true, userId: true } as const;
+
+/** Nested reply shape — depth guard prevents further nesting */
+const REPLY_SELECT = {
+  id: true,
+  content: true,
+  parentId: true,
+  pinned: true,
+  pinnedAt: true,
+  author: { select: AUTHOR_SELECT },
+  reactions: { select: REACTION_SELECT },
+  replies: { select: { id: true } },
+  createdAt: true,
+  updatedAt: true,
+};
+
+/** Top-level board comment shape */
 const BOARD_COMMENT_SELECT = {
   id: true,
   content: true,
   parentId: true,
   pinned: true,
   pinnedAt: true,
-  author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
-  reactions: { select: { emoji: true, userId: true } },
+  author: { select: AUTHOR_SELECT },
+  reactions: { select: REACTION_SELECT },
   replies: {
-    select: {
-      id: true,
-      content: true,
-      parentId: true,
-      pinned: true,
-      pinnedAt: true,
-      author: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
-      reactions: { select: { emoji: true, userId: true } },
-      replies: { select: { id: true } }, // depth guard
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: REPLY_SELECT,
     orderBy: { createdAt: "asc" as const },
   },
   createdAt: true,
   updatedAt: true,
-} as const;
+};
 
-function serializeBoardComment(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  comment: any,
-  currentUserId: string
-) {
+// ── Serializer ─────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeBoardComment(comment: any, currentUserId: string) {
   const reactionMap: Record<string, { count: number; reacted: boolean }> = {};
   for (const r of comment.reactions ?? []) {
     if (!reactionMap[r.emoji]) reactionMap[r.emoji] = { count: 0, reacted: false };
@@ -42,9 +50,7 @@ function serializeBoardComment(
     if (r.userId === currentUserId) reactionMap[r.emoji].reacted = true;
   }
   const reactions = Object.entries(reactionMap).map(([emoji, v]) => ({
-    emoji,
-    count: v.count,
-    reacted: v.reacted,
+    emoji, count: v.count, reacted: v.reacted,
   }));
 
   return {
@@ -67,43 +73,102 @@ export async function GET(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
-  const rawComments = await db.boardComment.findMany({
-    where: { parentId: null },
-    select: BOARD_COMMENT_SELECT,
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  try {
+    // Fetch board comments (with pin fields)
+    const rawComments = await db.boardComment.findMany({
+      where: { parentId: null },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: BOARD_COMMENT_SELECT as any,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
 
-  // Pinned comments first (most recently pinned), then non-pinned by createdAt desc
-  const pinned = rawComments
-    .filter((c) => c.pinned)
-    .sort((a, b) => (b.pinnedAt?.getTime() ?? 0) - (a.pinnedAt?.getTime() ?? 0));
-  const nonPinned = rawComments.filter((c) => !c.pinned);
-  const sortedComments = [...pinned, ...nonPinned];
+    // Pinned comments first (most recently pinned), then by createdAt desc
+    const pinned = (rawComments as any[])
+      .filter((c) => c.pinned)
+      .sort((a, b) => (b.pinnedAt?.getTime?.() ?? 0) - (a.pinnedAt?.getTime?.() ?? 0));
+    const nonPinned = (rawComments as any[]).filter((c) => !c.pinned);
+    const sortedComments = [...pinned, ...nonPinned];
 
-  // Recent task comments across all tasks (for Task Activity tab)
-  const taskComments = await db.comment.findMany({
-    where: { parentId: null },
-    select: {
-      id: true,
-      content: true,
-      author: { select: { id: true, fullName: true, avatarUrl: true } },
-      task: { select: { id: true, title: true } },
-      createdAt: true,
-      updatedAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+    // Recent task comments (Task Activity tab)
+    const taskComments = await db.comment.findMany({
+      where: { parentId: null },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: {
+        id: true,
+        content: true,
+        author: { select: { id: true, fullName: true, avatarUrl: true } },
+        task: { select: { id: true, title: true } },
+        createdAt: true,
+        updatedAt: true,
+      } as any,
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
 
-  return ok("Board comments retrieved.", {
-    comments: sortedComments.map((c) => serializeBoardComment(c, caller.id)),
-    taskComments: taskComments.map((tc) => ({
-      ...tc,
-      createdAt: new Date(tc.createdAt).toISOString(),
-      updatedAt: new Date(tc.updatedAt).toISOString(),
-    })),
-  });
+    return ok("Board comments retrieved.", {
+      comments: sortedComments.map((c) => serializeBoardComment(c, caller.id)),
+      taskComments: (taskComments as any[]).map((tc) => ({
+        ...tc,
+        createdAt: new Date(tc.createdAt).toISOString(),
+        updatedAt: new Date(tc.updatedAt).toISOString(),
+      })),
+    });
+  } catch (err) {
+    // If new fields (pinned/pinnedAt) aren't recognised by the cached Prisma
+    // client, fall back to the original query without those fields so the
+    // board discussion stays functional until the dev server is restarted.
+    console.error("[board-comments GET] Primary query failed, trying fallback:", err);
+
+    try {
+      const comments = await db.boardComment.findMany({
+        where: { parentId: null },
+        select: {
+          id: true, content: true, parentId: true,
+          author: { select: AUTHOR_SELECT },
+          reactions: { select: REACTION_SELECT },
+          replies: {
+            select: {
+              id: true, content: true, parentId: true,
+              author: { select: AUTHOR_SELECT },
+              reactions: { select: REACTION_SELECT },
+              replies: { select: { id: true } },
+              createdAt: true, updatedAt: true,
+            },
+            orderBy: { createdAt: "asc" as const },
+          },
+          createdAt: true, updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+
+      const taskComments = await db.comment.findMany({
+        where: { parentId: null },
+        select: {
+          id: true, content: true,
+          author: { select: { id: true, fullName: true, avatarUrl: true } },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          task: { select: { id: true, title: true } } as any,
+          createdAt: true, updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 30,
+      });
+
+      return ok("Board comments retrieved.", {
+        comments: comments.map((c) => serializeBoardComment(c, caller.id)),
+        taskComments: (taskComments as any[]).map((tc) => ({
+          ...tc,
+          createdAt: new Date(tc.createdAt).toISOString(),
+          updatedAt: new Date(tc.updatedAt).toISOString(),
+        })),
+      });
+    } catch (fallbackErr) {
+      console.error("[board-comments GET] Fallback also failed:", fallbackErr);
+      return fail("Failed to load board comments.", 500);
+    }
+  }
 }
 
 // ── POST /api/board-comments ───────────────────────────────────────────────
@@ -136,7 +201,8 @@ export async function POST(req: NextRequest) {
       authorId: caller.id,
       ...(parentId ? { parentId: parentId as string } : {}),
     },
-    select: BOARD_COMMENT_SELECT,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    select: BOARD_COMMENT_SELECT as any,
   });
 
   return ok("Comment posted.", { comment: serializeBoardComment(comment, caller.id) }, 201);
