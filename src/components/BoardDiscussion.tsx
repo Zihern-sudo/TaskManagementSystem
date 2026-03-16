@@ -493,6 +493,250 @@ function applyOptimisticReaction(
   });
 }
 
+// ── Task Activity Item ────────────────────────────────────────────────────────
+
+interface TaskActivityItemProps {
+  tc: TaskCommentFeed;
+  currentUser: SessionUser;
+  activeUsers: ActiveUser[];
+  onReply: (taskId: string, parentId: string, content: string) => Promise<void>;
+  onEdit: (id: string, content: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onPin: (id: string) => Promise<void>;
+}
+
+function TaskActivityItem({
+  tc,
+  currentUser,
+  activeUsers,
+  onReply,
+  onEdit,
+  onDelete,
+  onPin,
+}: TaskActivityItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const [editContent, setEditContent] = useState(tc.content);
+  const [replyContent, setReplyContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const isOwner = tc.author.id === currentUser.id;
+  const canModify = isOwner || currentUser.role === "admin";
+
+  async function submitEdit() {
+    if (!editContent.trim()) return;
+    setSaving(true);
+    await onEdit(tc.id, editContent.trim());
+    setSaving(false);
+    setEditing(false);
+  }
+
+  async function submitReply() {
+    if (!replyContent.trim()) return;
+    setSaving(true);
+    await onReply(tc.task.id, tc.id, replyContent.trim());
+    setSaving(false);
+    setReplying(false);
+    setReplyContent("");
+  }
+
+  return (
+    <>
+      <div className="flex gap-3">
+        <div
+          className={`w-8 h-8 rounded-full ${avatarColor(
+            tc.author.fullName
+          )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+        >
+          {tc.author.avatarUrl ? (
+            <Image
+              src={tc.author.avatarUrl}
+              alt={tc.author.fullName}
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+              unoptimized
+            />
+          ) : (
+            getInitials(tc.author.fullName)
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div
+            className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${
+              tc.pinned ? "border-amber-200 bg-amber-50/30" : "border-gray-100"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="text-sm font-semibold text-gray-900 shrink-0">
+                  {tc.author.fullName}
+                </span>
+                <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
+                  <svg
+                    className="w-2.5 h-2.5 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  <span className="truncate">{tc.task.title}</span>
+                </span>
+                {tc.pinned && (
+                  <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full border border-amber-200">
+                    <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                    </svg>
+                    Pinned
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-gray-400 shrink-0">
+                {timeAgo(tc.createdAt)}
+              </span>
+            </div>
+
+            {editing ? (
+              <div className="mt-1">
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={submitEdit}
+                    disabled={saving}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditing(false);
+                      setEditContent(tc.content);
+                    }}
+                    className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {tc.content}
+              </p>
+            )}
+          </div>
+
+          {/* Actions */}
+          {!editing && (
+            <div className="flex items-center gap-3 mt-1 px-1">
+              {/* Reply — available to everyone */}
+              <button
+                onClick={() => setReplying(!replying)}
+                className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Reply{tc.replyCount > 0 ? ` (${tc.replyCount})` : ""}
+              </button>
+
+              {/* Pin — available to everyone */}
+              <button
+                onClick={() => onPin(tc.id)}
+                className={`text-xs font-medium transition-colors flex items-center gap-1 ${
+                  tc.pinned
+                    ? "text-amber-600 hover:text-amber-700"
+                    : "text-gray-400 hover:text-amber-600"
+                }`}
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                </svg>
+                {tc.pinned ? "Unpin" : "Pin"}
+              </button>
+
+              {/* Edit & Delete — only for owner/admin */}
+              {canModify && (
+                <>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Reply input */}
+          {replying && (
+            <div className="mt-3 flex gap-2 pl-2">
+              <MentionTextarea
+                value={replyContent}
+                onChange={setReplyContent}
+                onMentionedUsersChange={() => {}}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submitReply();
+                  }
+                }}
+                activeUsers={activeUsers}
+                rows={2}
+                placeholder="Reply... (Enter to post)"
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
+              />
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={submitReply}
+                  disabled={saving || !replyContent.trim()}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                >
+                  {saving ? "..." : "Send"}
+                </button>
+                <button
+                  onClick={() => { setReplying(false); setReplyContent(""); }}
+                  className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Comment"
+          message="This comment will be permanently deleted."
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { setShowDeleteConfirm(false); onDelete(tc.id); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+    </>
+  );
+}
+
 // ── Board Discussion ──────────────────────────────────────────────────────────
 
 export default function BoardDiscussion({
@@ -642,6 +886,66 @@ export default function BoardDiscussion({
             c.id === commentId
               ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
               : c
+          )
+        );
+        toast.error("Failed to update pin.");
+        return;
+      }
+      toast.success(willPin ? "Comment pinned" : "Comment unpinned", { duration: 2000 });
+    } finally {
+      fetchComments();
+    }
+  }
+
+  // ── Task Activity handlers ──────────────────────────────────────────────────
+
+  async function handleActivityReply(taskId: string, parentId: string, content: string) {
+    const res = await fetch(`/api/tasks/${taskId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content, parentId }),
+    });
+    if (res.ok) toast.success("Reply posted");
+    else toast.error("Failed to post reply.");
+    await fetchComments();
+  }
+
+  async function handleActivityEdit(id: string, content: string) {
+    const res = await fetch(`/api/comments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok) toast.success("Comment updated");
+    else toast.error("Failed to update comment.");
+    await fetchComments();
+  }
+
+  async function handleActivityDelete(id: string) {
+    const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
+    if (res.ok) toast.success("Comment deleted");
+    else toast.error("Failed to delete comment.");
+    await fetchComments();
+  }
+
+  async function handleActivityPin(id: string) {
+    const current = taskComments.find((tc) => tc.id === id);
+    const willPin = current ? !current.pinned : true;
+    setTaskComments((prev) =>
+      prev.map((tc) =>
+        tc.id === id
+          ? { ...tc, pinned: !tc.pinned, pinnedAt: !tc.pinned ? new Date().toISOString() : null }
+          : tc
+      )
+    );
+    try {
+      const res = await fetch(`/api/comments/${id}/pin`, { method: "POST" });
+      if (!res.ok) {
+        setTaskComments((prev) =>
+          prev.map((tc) =>
+            tc.id === id
+              ? { ...tc, pinned: !tc.pinned, pinnedAt: !tc.pinned ? new Date().toISOString() : null }
+              : tc
           )
         );
         toast.error("Failed to update pin.");
@@ -973,59 +1277,16 @@ export default function BoardDiscussion({
                   </div>
                 ) : (
                   taskComments.map((tc) => (
-                    <div key={tc.id} className="flex gap-3">
-                      <div
-                        className={`w-8 h-8 rounded-full ${avatarColor(
-                          tc.author.fullName
-                        )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
-                      >
-                        {tc.author.avatarUrl ? (
-                          <Image
-                            src={tc.author.avatarUrl}
-                            alt={tc.author.fullName}
-                            width={32}
-                            height={32}
-                            className="w-full h-full object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          getInitials(tc.author.fullName)
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="text-sm font-semibold text-gray-900 shrink-0">
-                                {tc.author.fullName}
-                              </span>
-                              <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
-                                <svg
-                                  className="w-2.5 h-2.5 shrink-0"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                                  />
-                                </svg>
-                                <span className="truncate">{tc.task.title}</span>
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-400 shrink-0">
-                              {timeAgo(tc.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                            {tc.content}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <TaskActivityItem
+                      key={tc.id}
+                      tc={tc}
+                      currentUser={currentUser}
+                      activeUsers={activeUsers}
+                      onReply={handleActivityReply}
+                      onEdit={handleActivityEdit}
+                      onDelete={handleActivityDelete}
+                      onPin={handleActivityPin}
+                    />
                   ))
                 )}
               </div>

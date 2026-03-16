@@ -63,6 +63,9 @@ export interface TaskCommentFeed {
   content: string;
   author: { id: string; fullName: string; avatarUrl?: string | null };
   task: { id: string; title: string };
+  pinned: boolean;
+  pinnedAt?: string | null;
+  replyCount: number;
   createdAt: string;
   updatedAt: string;
 }

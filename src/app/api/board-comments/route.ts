@@ -98,8 +98,11 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         content: true,
+        pinned: true,
+        pinnedAt: true,
         author: { select: { id: true, fullName: true, avatarUrl: true } },
         task: { select: { id: true, title: true } },
+        _count: { select: { replies: true } },
         createdAt: true,
         updatedAt: true,
       } as any,
@@ -110,7 +113,13 @@ export async function GET(req: NextRequest) {
     return ok("Board comments retrieved.", {
       comments: sortedComments.map((c) => serializeBoardComment(c, caller.id)),
       taskComments: (taskComments as any[]).map((tc) => ({
-        ...tc,
+        id: tc.id,
+        content: tc.content,
+        pinned: tc.pinned ?? false,
+        pinnedAt: tc.pinnedAt ? new Date(tc.pinnedAt).toISOString() : null,
+        author: tc.author,
+        task: tc.task,
+        replyCount: tc._count?.replies ?? 0,
         createdAt: new Date(tc.createdAt).toISOString(),
         updatedAt: new Date(tc.updatedAt).toISOString(),
       })),
@@ -151,6 +160,7 @@ export async function GET(req: NextRequest) {
           author: { select: { id: true, fullName: true, avatarUrl: true } },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           task: { select: { id: true, title: true } } as any,
+          _count: { select: { replies: true } },
           createdAt: true, updatedAt: true,
         },
         orderBy: { createdAt: "desc" },
@@ -160,7 +170,13 @@ export async function GET(req: NextRequest) {
       return ok("Board comments retrieved.", {
         comments: comments.map((c) => serializeBoardComment(c, caller.id)),
         taskComments: (taskComments as any[]).map((tc) => ({
-          ...tc,
+          id: tc.id,
+          content: tc.content,
+          pinned: false,
+          pinnedAt: null,
+          author: tc.author,
+          task: tc.task,
+          replyCount: tc._count?.replies ?? 0,
           createdAt: new Date(tc.createdAt).toISOString(),
           updatedAt: new Date(tc.updatedAt).toISOString(),
         })),
