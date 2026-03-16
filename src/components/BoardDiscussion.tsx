@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { BoardComment, TaskCommentFeed, SessionUser } from "@/types";
+import { BoardComment, TaskCommentFeed, TaskCommentFeedReply, SessionUser } from "@/types";
 import {
   MentionTextarea,
   renderMentions,
@@ -515,6 +515,7 @@ function TaskActivityItem({
   onPin,
 }: TaskActivityItemProps) {
   const [editing, setEditing] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
   const [replying, setReplying] = useState(false);
   const [editContent, setEditContent] = useState(tc.content);
   const [replyContent, setReplyContent] = useState("");
@@ -523,6 +524,7 @@ function TaskActivityItem({
 
   const isOwner = tc.author.id === currentUser.id;
   const canModify = isOwner || currentUser.role === "admin";
+  const replies: TaskCommentFeedReply[] = tc.replies ?? [];
 
   async function submitEdit() {
     if (!editContent.trim()) return;
@@ -539,6 +541,14 @@ function TaskActivityItem({
     setSaving(false);
     setReplying(false);
     setReplyContent("");
+    setShowReplies(true);
+  }
+
+  function handleReplyButtonClick() {
+    if (replies.length > 0 && !replying) {
+      setShowReplies((v) => !v);
+    }
+    setReplying((v) => !v);
   }
 
   return (
@@ -620,10 +630,7 @@ function TaskActivityItem({
                     {saving ? "Saving..." : "Save"}
                   </button>
                   <button
-                    onClick={() => {
-                      setEditing(false);
-                      setEditContent(tc.content);
-                    }}
+                    onClick={() => { setEditing(false); setEditContent(tc.content); }}
                     className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
                   >
                     Cancel
@@ -642,13 +649,13 @@ function TaskActivityItem({
             <div className="flex items-center gap-3 mt-1 px-1">
               {/* Reply — available to everyone */}
               <button
-                onClick={() => setReplying(!replying)}
+                onClick={handleReplyButtonClick}
                 className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
-                Reply{tc.replyCount > 0 ? ` (${tc.replyCount})` : ""}
+                Reply{replies.length > 0 ? ` (${replies.length})` : ""}
               </button>
 
               {/* Pin — available to everyone */}
@@ -683,6 +690,45 @@ function TaskActivityItem({
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Existing replies */}
+          {showReplies && replies.length > 0 && (
+            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-100">
+              {replies.map((reply) => (
+                <div key={reply.id} className="flex gap-2">
+                  <div
+                    className={`w-6 h-6 rounded-full ${avatarColor(reply.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+                  >
+                    {reply.author.avatarUrl ? (
+                      <Image
+                        src={reply.author.avatarUrl}
+                        alt={reply.author.fullName}
+                        width={24}
+                        height={24}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      getInitials(reply.author.fullName)
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 px-3 py-2 shadow-sm">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-gray-900">
+                        {reply.author.fullName}
+                      </span>
+                      <span className="text-xs text-gray-400 shrink-0">
+                        {timeAgo(reply.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {reply.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

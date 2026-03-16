@@ -58,6 +58,14 @@ export interface BoardComment {
   updatedAt: string;
 }
 
+export interface TaskCommentFeedReply {
+  id: string;
+  content: string;
+  author: { id: string; fullName: string; avatarUrl?: string | null };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TaskCommentFeed {
   id: string;
   content: string;
@@ -66,6 +74,7 @@ export interface TaskCommentFeed {
   pinned: boolean;
   pinnedAt?: string | null;
   replyCount: number;
+  replies: TaskCommentFeedReply[];
   createdAt: string;
   updatedAt: string;
 }

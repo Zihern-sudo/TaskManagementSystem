@@ -70,12 +70,36 @@ function serializeBoardComment(comment: any, currentUserId: string) {
 
 // ── GET /api/board-comments ────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeTaskComment(tc: any): Record<string, unknown> {
+  return {
+    id: tc.id,
+    content: tc.content,
+    pinned: tc.pinned ?? false,
+    pinnedAt: tc.pinnedAt ? new Date(tc.pinnedAt).toISOString() : null,
+    author: tc.author,
+    task: tc.task,
+    replyCount: tc._count?.replies ?? (tc.replies?.length ?? 0),
+    replies: (tc.replies ?? []).map((r: any) => ({
+      id: r.id,
+      content: r.content,
+      author: r.author,
+      createdAt: new Date(r.createdAt).toISOString(),
+      updatedAt: new Date(r.updatedAt).toISOString(),
+    })),
+    createdAt: new Date(tc.createdAt).toISOString(),
+    updatedAt: new Date(tc.updatedAt).toISOString(),
+  };
+}
+
 export async function GET(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
+  // ── Board comments (independent query with pin fallback) ──────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let serializedComments: any[] = [];
   try {
-    // Fetch board comments (with pin fields)
     const rawComments = await db.boardComment.findMany({
       where: { parentId: null },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,55 +107,15 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-
-    // Pinned comments first (most recently pinned), then by createdAt desc
     const pinned = (rawComments as any[])
       .filter((c) => c.pinned)
       .sort((a, b) => (b.pinnedAt?.getTime?.() ?? 0) - (a.pinnedAt?.getTime?.() ?? 0));
     const nonPinned = (rawComments as any[]).filter((c) => !c.pinned);
-    const sortedComments = [...pinned, ...nonPinned];
-
-    // Recent task comments (Task Activity tab)
-    const taskComments = await db.comment.findMany({
-      where: { parentId: null },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      select: {
-        id: true,
-        content: true,
-        pinned: true,
-        pinnedAt: true,
-        author: { select: { id: true, fullName: true, avatarUrl: true } },
-        task: { select: { id: true, title: true } },
-        _count: { select: { replies: true } },
-        createdAt: true,
-        updatedAt: true,
-      } as any,
-      orderBy: { createdAt: "desc" },
-      take: 30,
-    });
-
-    return ok("Board comments retrieved.", {
-      comments: sortedComments.map((c) => serializeBoardComment(c, caller.id)),
-      taskComments: (taskComments as any[]).map((tc) => ({
-        id: tc.id,
-        content: tc.content,
-        pinned: tc.pinned ?? false,
-        pinnedAt: tc.pinnedAt ? new Date(tc.pinnedAt).toISOString() : null,
-        author: tc.author,
-        task: tc.task,
-        replyCount: tc._count?.replies ?? 0,
-        createdAt: new Date(tc.createdAt).toISOString(),
-        updatedAt: new Date(tc.updatedAt).toISOString(),
-      })),
-    });
-  } catch (err) {
-    // If new fields (pinned/pinnedAt) aren't recognised by the cached Prisma
-    // client, fall back to the original query without those fields so the
-    // board discussion stays functional until the dev server is restarted.
-    console.error("[board-comments GET] Primary query failed, trying fallback:", err);
-
+    serializedComments = [...pinned, ...nonPinned].map((c) => serializeBoardComment(c, caller.id));
+  } catch {
+    // Prisma client not regenerated yet — fetch without pin fields
     try {
-      const comments = await db.boardComment.findMany({
+      const rawComments = await db.boardComment.findMany({
         where: { parentId: null },
         select: {
           id: true, content: true, parentId: true,
@@ -152,40 +136,75 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "desc" },
         take: 50,
       });
+      serializedComments = rawComments.map((c) => serializeBoardComment(c, caller.id));
+    } catch (err) {
+      console.error("[board-comments GET] Board comments query failed:", err);
+      return fail("Failed to load board comments.", 500);
+    }
+  }
 
+  // ── Task comments (independent query with pin fallback) ───────────────────
+  const REPLY_SELECT_TC = {
+    id: true,
+    content: true,
+    author: { select: { id: true, fullName: true, avatarUrl: true } },
+    createdAt: true,
+    updatedAt: true,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let serializedTaskComments: any[] = [];
+  try {
+    const taskComments = await db.comment.findMany({
+      where: { parentId: null },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: {
+        id: true,
+        content: true,
+        pinned: true,
+        pinnedAt: true,
+        author: { select: { id: true, fullName: true, avatarUrl: true } },
+        task: { select: { id: true, title: true } },
+        replies: { select: REPLY_SELECT_TC, orderBy: { createdAt: "asc" as const } },
+        _count: { select: { replies: true } },
+        createdAt: true,
+        updatedAt: true,
+      } as any,
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+    serializedTaskComments = (taskComments as any[]).map(serializeTaskComment);
+  } catch {
+    // Prisma client doesn't know about pinned/pinnedAt on Comment yet
+    try {
       const taskComments = await db.comment.findMany({
         where: { parentId: null },
         select: {
-          id: true, content: true,
+          id: true,
+          content: true,
           author: { select: { id: true, fullName: true, avatarUrl: true } },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           task: { select: { id: true, title: true } } as any,
+          replies: { select: REPLY_SELECT_TC, orderBy: { createdAt: "asc" as const } },
           _count: { select: { replies: true } },
-          createdAt: true, updatedAt: true,
+          createdAt: true,
+          updatedAt: true,
         },
         orderBy: { createdAt: "desc" },
         take: 30,
       });
-
-      return ok("Board comments retrieved.", {
-        comments: comments.map((c) => serializeBoardComment(c, caller.id)),
-        taskComments: (taskComments as any[]).map((tc) => ({
-          id: tc.id,
-          content: tc.content,
-          pinned: false,
-          pinnedAt: null,
-          author: tc.author,
-          task: tc.task,
-          replyCount: tc._count?.replies ?? 0,
-          createdAt: new Date(tc.createdAt).toISOString(),
-          updatedAt: new Date(tc.updatedAt).toISOString(),
-        })),
-      });
-    } catch (fallbackErr) {
-      console.error("[board-comments GET] Fallback also failed:", fallbackErr);
-      return fail("Failed to load board comments.", 500);
+      serializedTaskComments = (taskComments as any[]).map(serializeTaskComment);
+    } catch (err) {
+      console.error("[board-comments GET] Task comments query failed:", err);
+      // Non-fatal: return board comments even if task comments fail
+      serializedTaskComments = [];
     }
   }
+
+  return ok("Board comments retrieved.", {
+    comments: serializedComments,
+    taskComments: serializedTaskComments,
+  });
 }
 
 // ── POST /api/board-comments ───────────────────────────────────────────────
