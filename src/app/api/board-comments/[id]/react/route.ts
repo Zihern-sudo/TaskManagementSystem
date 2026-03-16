@@ -27,12 +27,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   const comment = await db.boardComment.findUnique({ where: { id }, select: { id: true } });
   if (!comment) return fail("Comment not found.", 404);
 
-  const existing = await db.boardReaction.findUnique({
-    where: { commentId_userId_emoji: { commentId: id, userId: caller.id, emoji } },
+  const deleted = await db.boardReaction.deleteMany({
+    where: { commentId: id, userId: caller.id, emoji },
   });
 
-  if (existing) {
-    await db.boardReaction.delete({ where: { id: existing.id } });
+  if (deleted.count > 0) {
     return ok("Reaction removed.", { action: "removed", emoji });
   } else {
     await db.boardReaction.create({ data: { commentId: id, userId: caller.id, emoji } });
