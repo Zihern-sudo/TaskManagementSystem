@@ -272,6 +272,49 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
   );
 }
 
+// ── Optimistic reaction helpers ────────────────────────────────────────────
+
+function toggleReactionOnComment(comment: BoardComment, emoji: string): BoardComment {
+  const existing = comment.reactions.find((r) => r.emoji === emoji);
+  let newReactions: BoardComment["reactions"];
+
+  if (existing?.reacted) {
+    // Remove current user's reaction
+    newReactions = existing.count <= 1
+      ? comment.reactions.filter((r) => r.emoji !== emoji)
+      : comment.reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r);
+  } else if (existing) {
+    // Add to existing emoji group
+    newReactions = comment.reactions.map((r) =>
+      r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r
+    );
+  } else {
+    // Brand-new emoji
+    newReactions = [...comment.reactions, { emoji, count: 1, reacted: true }];
+  }
+
+  return { ...comment, reactions: newReactions };
+}
+
+function applyOptimisticReaction(
+  comments: BoardComment[],
+  commentId: string,
+  emoji: string
+): BoardComment[] {
+  return comments.map((c) => {
+    if (c.id === commentId) return toggleReactionOnComment(c, emoji);
+    if (c.replies?.some((r) => r.id === commentId)) {
+      return {
+        ...c,
+        replies: c.replies.map((r) =>
+          r.id === commentId ? toggleReactionOnComment(r, emoji) : r
+        ),
+      };
+    }
+    return c;
+  });
+}
+
 // ── Board Discussion ───────────────────────────────────────────────────────
 
 export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
@@ -342,23 +385,30 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   }
 
   async function handleReact(commentId: string, emoji: string) {
-    await fetch(`/api/board-comments/${commentId}/react`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ emoji }),
-    });
-    await fetchComments();
+    // Optimistic update — instant UI feedback
+    setComments((prev) => applyOptimisticReaction(prev, commentId, emoji));
+
+    try {
+      await fetch(`/api/board-comments/${commentId}/react`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+      });
+    } finally {
+      // Sync with server to confirm final state
+      fetchComments();
+    }
   }
 
   const totalCount = comments.reduce((acc, c) => acc + 1 + (c.replies?.length ?? 0), 0);
 
   return (
     <div className="mx-6 mb-6">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Header */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-100 transition-colors"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -389,7 +439,7 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
         {!collapsed && (
           <div className="border-t border-gray-100">
             {/* New comment input */}
-            <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
+            <div className="px-6 py-4 bg-white/60 border-b border-slate-200">
               <div className="flex gap-3">
                 <div
                   className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
@@ -437,7 +487,7 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
             </div>
 
             {/* Comments list */}
-            <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto">
+            <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto bg-slate-50/80">
               {loading ? (
                 <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
                   <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">

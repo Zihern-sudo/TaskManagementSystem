@@ -579,19 +579,26 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
           </select>
 
           {/* Assigned to me toggle */}
-          <button
-            onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
-            className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              filterAssignedToMe
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
-            }`}
-          >
-            <div className="w-5 h-5 rounded-full bg-current opacity-20 flex items-center justify-center text-[9px] font-bold">
-              {getInitials(currentUser.name)}
-            </div>
-            My Tasks
-          </button>
+          {(() => {
+            const myCount = tasks.filter((t) => t.assignees.some((a) => a.id === currentUser.id)).length;
+            return (
+              <button
+                onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
+                className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  filterAssignedToMe
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                }`}
+              >
+                <span className={`min-w-[20px] h-5 rounded-full flex items-center justify-center text-[11px] font-bold px-1 ${
+                  filterAssignedToMe ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                }`}>
+                  {myCount}
+                </span>
+                My Tasks
+              </button>
+            );
+          })()}
 
           {/* View toggle */}
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
