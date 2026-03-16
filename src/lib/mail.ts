@@ -43,3 +43,33 @@ export function buildMagicLinkEmail(token: string, baseUrl: string) {
            <a href="${link}">${link}</a>`,
   };
 }
+
+export function buildMentionEmail(
+  mentionedByName: string,
+  commentContent: string,
+  baseUrl: string
+) {
+  const displayContent = commentContent
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+
+  return {
+    subject: `${mentionedByName} mentioned you in a discussion`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
+        <h2 style="font-size:18px;margin-bottom:8px">You were mentioned in a board discussion</h2>
+        <p style="margin-bottom:16px">
+          <strong>${mentionedByName}</strong> mentioned you:
+        </p>
+        <blockquote style="border-left:4px solid #3b82f6;padding:12px 16px;background:#eff6ff;margin:0 0 20px;border-radius:4px;color:#374151;font-size:14px">
+          ${displayContent}
+        </blockquote>
+        <a href="${baseUrl}/tasks"
+           style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px">
+          View Discussion
+        </a>
+      </div>`,
+  };
+}

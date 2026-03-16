@@ -8,6 +8,13 @@ interface BoardDiscussionProps {
   currentUser: SessionUser;
 }
 
+interface ActiveUser {
+  id: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string | null;
+}
+
 const EMOJIS = ["👍", "❤️", "🎉", "🔥", "😂", "🙌"];
 
 function getInitials(name: string) {
@@ -38,7 +45,230 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-// ── Reaction Bar ───────────────────────────────────────────────────────────
+// ── Render content with @mention highlights ─────────────────────────────────
+
+function renderContent(content: string, activeUsers: ActiveUser[]) {
+  if (!content.includes("@") || activeUsers.length === 0) {
+    return <span className="whitespace-pre-wrap">{content}</span>;
+  }
+
+  const escaped = activeUsers.map((u) =>
+    u.fullName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+  const regex = new RegExp(`@(${escaped.join("|")})`, "g");
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`t-${lastIndex}`} className="whitespace-pre-wrap">
+          {content.slice(lastIndex, match.index)}
+        </span>
+      );
+    }
+    parts.push(
+      <span
+        key={`m-${match.index}`}
+        className="inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-tight"
+      >
+        @{match[1]}
+      </span>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(
+      <span key={`t-end`} className="whitespace-pre-wrap">
+        {content.slice(lastIndex)}
+      </span>
+    );
+  }
+
+  return <>{parts}</>;
+}
+
+// ── MentionTextarea ──────────────────────────────────────────────────────────
+
+interface MentionTextareaProps {
+  value: string;
+  onChange: (value: string) => void;
+  onMentionedUsersChange: (userIds: string[]) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  activeUsers: ActiveUser[];
+  rows?: number;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+}
+
+function MentionTextarea({
+  value,
+  onChange,
+  onMentionedUsersChange,
+  onKeyDown,
+  activeUsers,
+  rows = 2,
+  placeholder,
+  className,
+  disabled,
+}: MentionTextareaProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionStart, setMentionStart] = useState<number>(-1);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
+
+  const filteredUsers =
+    mentionQuery !== null
+      ? activeUsers
+          .filter((u) =>
+            u.fullName.toLowerCase().includes(mentionQuery.toLowerCase())
+          )
+          .slice(0, 6)
+      : [];
+
+  // Reset tracked mentions when the field is cleared
+  useEffect(() => {
+    if (!value.trim()) {
+      setMentionedUserIds([]);
+      onMentionedUsersChange([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value;
+    const cursor = e.target.selectionStart ?? val.length;
+    onChange(val);
+
+    const textBeforeCursor = val.slice(0, cursor);
+    // Detect @<query> pattern at end of text-before-cursor
+    const match = textBeforeCursor.match(/(^|[\s\n])@([^\s@]*)$/);
+    if (match) {
+      const atIdx = textBeforeCursor.lastIndexOf("@");
+      setMentionStart(atIdx);
+      setMentionQuery(match[2]);
+      setHighlightedIndex(0);
+    } else {
+      setMentionQuery(null);
+      setMentionStart(-1);
+    }
+  }
+
+  function selectUser(user: ActiveUser) {
+    const cursor = textareaRef.current?.selectionStart ?? value.length;
+    const before = value.slice(0, mentionStart);
+    const after = value.slice(cursor);
+    const insertText = `@${user.fullName} `;
+    const newVal = before + insertText + after;
+    onChange(newVal);
+
+    const newIds = [...mentionedUserIds, user.id];
+    setMentionedUserIds(newIds);
+    onMentionedUsersChange(newIds);
+
+    setMentionQuery(null);
+    setMentionStart(-1);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newPos = before.length + insertText.length;
+        textareaRef.current.setSelectionRange(newPos, newPos);
+        textareaRef.current.focus();
+      }
+    }, 0);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (mentionQuery !== null && filteredUsers.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex((i) => Math.min(i + 1, filteredUsers.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        selectUser(filteredUsers[highlightedIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        setMentionQuery(null);
+        return;
+      }
+    }
+    onKeyDown?.(e);
+  }
+
+  return (
+    <div className="relative w-full">
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        rows={rows}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className}
+      />
+
+      {/* @mention dropdown */}
+      {mentionQuery !== null && filteredUsers.length > 0 && (
+        <div className="absolute bottom-full mb-1 left-0 w-64 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden">
+          <div className="px-3 py-1.5 border-b border-gray-100 bg-gray-50">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+              Mention a teammate
+            </span>
+          </div>
+          {filteredUsers.map((user, i) => (
+            <button
+              key={user.id}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                selectUser(user);
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
+                i === highlightedIndex
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <div
+                className={`w-7 h-7 rounded-full ${avatarColor(user.fullName)} flex items-center justify-center text-white text-[11px] font-bold shrink-0 overflow-hidden`}
+              >
+                {user.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    width={28}
+                    height={28}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  getInitials(user.fullName)
+                )}
+              </div>
+              <span className="text-sm font-medium truncate">{user.fullName}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reaction Bar ─────────────────────────────────────────────────────────────
 
 interface ReactionBarProps {
   commentId: string;
@@ -86,7 +316,6 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
         </button>
       ))}
 
-      {/* Emoji picker trigger */}
       <div ref={ref} className="relative">
         <button
           onClick={() => setPicking(!picking)}
@@ -116,24 +345,36 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
   );
 }
 
-// ── Comment Item ───────────────────────────────────────────────────────────
+// ── Comment Item ─────────────────────────────────────────────────────────────
 
 interface CommentItemProps {
   comment: BoardComment;
   currentUser: SessionUser;
+  activeUsers: ActiveUser[];
   isReply?: boolean;
-  onReply: (parentId: string, content: string) => Promise<void>;
+  onReply: (parentId: string, content: string, mentionedUserIds: string[]) => Promise<void>;
   onEdit: (id: string, content: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReact: (commentId: string, emoji: string) => Promise<void>;
   onPin: (id: string) => Promise<void>;
 }
 
-function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete, onReact, onPin }: CommentItemProps) {
+function CommentItem({
+  comment,
+  currentUser,
+  activeUsers,
+  isReply,
+  onReply,
+  onEdit,
+  onDelete,
+  onReact,
+  onPin,
+}: CommentItemProps) {
   const [editing, setEditing] = useState(false);
   const [replying, setReplying] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [replyContent, setReplyContent] = useState("");
+  const [replyMentionedUserIds, setReplyMentionedUserIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const canModify = comment.author.id === currentUser.id || currentUser.role === "admin";
@@ -149,10 +390,11 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
   async function submitReply() {
     if (!replyContent.trim()) return;
     setSaving(true);
-    await onReply(comment.id, replyContent.trim());
+    await onReply(comment.id, replyContent.trim(), replyMentionedUserIds);
     setSaving(false);
     setReplying(false);
     setReplyContent("");
+    setReplyMentionedUserIds([]);
   }
 
   return (
@@ -160,12 +402,25 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
       <div
         className={`w-8 h-8 rounded-full ${avatarColor(comment.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
       >
-        {comment.author.avatarUrl
-          ? <Image src={comment.author.avatarUrl} alt={comment.author.fullName} width={32} height={32} className="w-full h-full object-cover" unoptimized />
-          : getInitials(comment.author.fullName)}
+        {comment.author.avatarUrl ? (
+          <Image
+            src={comment.author.avatarUrl}
+            alt={comment.author.fullName}
+            width={32}
+            height={32}
+            className="w-full h-full object-cover"
+            unoptimized
+          />
+        ) : (
+          getInitials(comment.author.fullName)
+        )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${comment.pinned ? "border-amber-200 bg-amber-50/30" : "border-gray-100"}`}>
+        <div
+          className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${
+            comment.pinned ? "border-amber-200 bg-amber-50/30" : "border-gray-100"
+          }`}
+        >
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-semibold text-gray-900">{comment.author.fullName}</span>
@@ -175,7 +430,7 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
               {comment.pinned && !isReply && (
                 <span className="flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full border border-amber-200">
                   <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                   </svg>
                   Pinned
                 </span>
@@ -183,6 +438,7 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
             </div>
             <span className="text-xs text-gray-400 shrink-0">{timeAgo(comment.createdAt)}</span>
           </div>
+
           {editing ? (
             <div className="mt-1">
               <textarea
@@ -192,16 +448,25 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50"
               />
               <div className="flex gap-2 mt-2">
-                <button onClick={submitEdit} disabled={saving} className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                <button
+                  onClick={submitEdit}
+                  disabled={saving}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
                   {saving ? "Saving..." : "Save"}
                 </button>
-                <button onClick={() => { setEditing(false); setEditContent(comment.content); }} className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100">
+                <button
+                  onClick={() => { setEditing(false); setEditContent(comment.content); }}
+                  className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
+                >
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {renderContent(comment.content, activeUsers)}
+            </p>
           )}
         </div>
 
@@ -221,10 +486,12 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
-                Reply {comment.replies && comment.replies.length > 0 ? `(${comment.replies.length})` : ""}
+                Reply{" "}
+                {comment.replies && comment.replies.length > 0
+                  ? `(${comment.replies.length})`
+                  : ""}
               </button>
             )}
-            {/* Pin — only on top-level comments */}
             {!isReply && (
               <button
                 onClick={() => onPin(comment.id)}
@@ -235,17 +502,23 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
                 }`}
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                 </svg>
                 {comment.pinned ? "Unpin" : "Pin"}
               </button>
             )}
             {canModify && (
               <>
-                <button onClick={() => setEditing(true)} className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors"
+                >
                   Edit
                 </button>
-                <button onClick={() => onDelete(comment.id)} className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors">
+                <button
+                  onClick={() => onDelete(comment.id)}
+                  className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
+                >
                   Delete
                 </button>
               </>
@@ -253,22 +526,36 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
           </div>
         )}
 
-        {/* Reply input */}
+        {/* Reply input with @mention support */}
         {replying && (
           <div className="mt-3 flex gap-2 pl-2">
-            <textarea
+            <MentionTextarea
               value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
+              onChange={setReplyContent}
+              onMentionedUsersChange={setReplyMentionedUserIds}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submitReply();
+                }
+              }}
+              activeUsers={activeUsers}
               rows={2}
-              placeholder="Write a reply... (Enter to post)"
+              placeholder="Write a reply... (@ to mention, Enter to post)"
               className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
             />
             <div className="flex flex-col gap-1">
-              <button onClick={submitReply} disabled={saving || !replyContent.trim()} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium">
+              <button
+                onClick={submitReply}
+                disabled={saving || !replyContent.trim()}
+                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+              >
                 {saving ? "..." : "Send"}
               </button>
-              <button onClick={() => { setReplying(false); setReplyContent(""); }} className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100">
+              <button
+                onClick={() => { setReplying(false); setReplyContent(""); }}
+                className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100"
+              >
                 Cancel
               </button>
             </div>
@@ -283,6 +570,7 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
                 key={reply.id}
                 comment={reply}
                 currentUser={currentUser}
+                activeUsers={activeUsers}
                 isReply
                 onReply={onReply}
                 onEdit={onEdit}
@@ -298,16 +586,19 @@ function CommentItem({ comment, currentUser, isReply, onReply, onEdit, onDelete,
   );
 }
 
-// ── Optimistic reaction helpers ────────────────────────────────────────────
+// ── Optimistic reaction helpers ───────────────────────────────────────────────
 
 function toggleReactionOnComment(comment: BoardComment, emoji: string): BoardComment {
   const existing = comment.reactions.find((r) => r.emoji === emoji);
   let newReactions: BoardComment["reactions"];
 
   if (existing?.reacted) {
-    newReactions = existing.count <= 1
-      ? comment.reactions.filter((r) => r.emoji !== emoji)
-      : comment.reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r);
+    newReactions =
+      existing.count <= 1
+        ? comment.reactions.filter((r) => r.emoji !== emoji)
+        : comment.reactions.map((r) =>
+            r.emoji === emoji ? { ...r, count: r.count - 1, reacted: false } : r
+          );
   } else if (existing) {
     newReactions = comment.reactions.map((r) =>
       r.emoji === emoji ? { ...r, count: r.count + 1, reacted: true } : r
@@ -338,22 +629,34 @@ function applyOptimisticReaction(
   });
 }
 
-// ── Board Discussion ───────────────────────────────────────────────────────
+// ── Board Discussion ──────────────────────────────────────────────────────────
 
 export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   const [comments, setComments] = useState<BoardComment[]>([]);
   const [taskComments, setTaskComments] = useState<TaskCommentFeed[]>([]);
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<"discussion" | "activity">("discussion");
   const [newComment, setNewComment] = useState("");
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
   const [posting, setPosting] = useState(false);
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null);
 
+  // Fetch current user avatar + active users for @mention
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => r.json())
-      .then((d) => { if (d.data?.user?.avatarUrl) setCurrentUserAvatar(d.data.user.avatarUrl); })
+      .then((d) => {
+        if (d.data?.user?.avatarUrl) setCurrentUserAvatar(d.data.user.avatarUrl);
+      })
+      .catch(() => null);
+
+    fetch("/api/users/active")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.data?.users)) setActiveUsers(d.data.users);
+      })
       .catch(() => null);
   }, []);
 
@@ -380,10 +683,14 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
       const res = await fetch("/api/board-comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newComment.trim() }),
+        body: JSON.stringify({
+          content: newComment.trim(),
+          mentionedUserIds,
+        }),
       });
       if (res.ok) {
         setNewComment("");
+        setMentionedUserIds([]);
         await fetchComments();
       }
     } finally {
@@ -391,11 +698,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
     }
   }
 
-  async function handleReply(parentId: string, content: string) {
+  async function handleReply(parentId: string, content: string, replyMentionedUserIds: string[]) {
     await fetch("/api/board-comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, parentId }),
+      body: JSON.stringify({ content, parentId, mentionedUserIds: replyMentionedUserIds }),
     });
     await fetchComments();
   }
@@ -416,9 +723,7 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   }
 
   async function handleReact(commentId: string, emoji: string) {
-    // Optimistic update — instant UI feedback
     setComments((prev) => applyOptimisticReaction(prev, commentId, emoji));
-
     try {
       await fetch(`/api/board-comments/${commentId}/react`, {
         method: "POST",
@@ -426,13 +731,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
         body: JSON.stringify({ emoji }),
       });
     } finally {
-      // Sync with server to confirm final state
       fetchComments();
     }
   }
 
   async function handlePin(commentId: string) {
-    // Optimistic update
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId
@@ -443,7 +746,6 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
     try {
       const res = await fetch(`/api/board-comments/${commentId}/pin`, { method: "POST" });
       if (!res.ok) {
-        // Revert optimistic update if pin failed
         setComments((prev) =>
           prev.map((c) =>
             c.id === commentId
@@ -488,7 +790,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
           </div>
           <svg
             className={`w-5 h-5 text-gray-400 transition-transform ${collapsed ? "" : "rotate-180"}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
@@ -508,9 +812,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
               >
                 Discussion
                 {totalCount > 0 && (
-                  <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                    tab === "discussion" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
-                  }`}>
+                  <span
+                    className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
+                      tab === "discussion" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
                     {totalCount}
                   </span>
                 )}
@@ -525,9 +831,11 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
               >
                 Task Activity
                 {taskComments.length > 0 && (
-                  <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                    tab === "activity" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
-                  }`}>
+                  <span
+                    className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
+                      tab === "activity" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
                     {taskComments.length}
                   </span>
                 )}
@@ -542,21 +850,39 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                     <div
                       className={`w-8 h-8 rounded-full ${avatarColor(currentUser.name)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
                     >
-                      {currentUserAvatar
-                        ? <Image src={currentUserAvatar} alt={currentUser.name} width={32} height={32} className="w-full h-full object-cover" unoptimized />
-                        : getInitials(currentUser.name)}
+                      {currentUserAvatar ? (
+                        <Image
+                          src={currentUserAvatar}
+                          alt={currentUser.name}
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        getInitials(currentUser.name)
+                      )}
                     </div>
                     <div className="flex-1">
-                      <textarea
+                      <MentionTextarea
                         value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePost(); } }}
+                        onChange={setNewComment}
+                        onMentionedUsersChange={setMentionedUserIds}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handlePost();
+                          }
+                        }}
+                        activeUsers={activeUsers}
                         rows={2}
-                        placeholder="Share an update, ask a question, or start a discussion... (Enter to post)"
+                        placeholder="Share an update or ask a question... (@ to mention, Enter to post)"
                         className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white transition"
                       />
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-gray-400">Shift+Enter for new line</p>
+                        <p className="text-xs text-gray-400">
+                          Type <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">@</kbd> to mention a teammate · Shift+Enter for new line
+                        </p>
                         <button
                           onClick={handlePost}
                           disabled={posting || !newComment.trim()}
@@ -607,6 +933,7 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                         key={c.id}
                         comment={c}
                         currentUser={currentUser}
+                        activeUsers={activeUsers}
                         onReply={handleReply}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
@@ -642,15 +969,26 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                       <div
                         className={`w-8 h-8 rounded-full ${avatarColor(tc.author.fullName)} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
                       >
-                        {tc.author.avatarUrl
-                          ? <Image src={tc.author.avatarUrl} alt={tc.author.fullName} width={32} height={32} className="w-full h-full object-cover" unoptimized />
-                          : getInitials(tc.author.fullName)}
+                        {tc.author.avatarUrl ? (
+                          <Image
+                            src={tc.author.avatarUrl}
+                            alt={tc.author.fullName}
+                            width={32}
+                            height={32}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          getInitials(tc.author.fullName)
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 shadow-sm">
                           <div className="flex items-start justify-between gap-2 mb-1.5">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="text-sm font-semibold text-gray-900 shrink-0">{tc.author.fullName}</span>
+                              <span className="text-sm font-semibold text-gray-900 shrink-0">
+                                {tc.author.fullName}
+                              </span>
                               <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
                                 <svg className="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -660,7 +998,9 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
                             </div>
                             <span className="text-xs text-gray-400 shrink-0">{timeAgo(tc.createdAt)}</span>
                           </div>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{tc.content}</p>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            {tc.content}
+                          </p>
                         </div>
                       </div>
                     </div>
