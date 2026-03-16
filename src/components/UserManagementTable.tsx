@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 import { User, UserRole, AccountStatus } from "@/types";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const STATUS_STYLES: Record<AccountStatus, string> = {
   active: "bg-green-100 text-green-700 border border-green-200",
@@ -105,6 +107,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Failed to save user."); return; }
+      toast.success(isEdit ? "User updated" : "User created");
       onSave(data.data.user);
     } catch {
       setError("Network error.");
@@ -213,6 +216,10 @@ export default function UserManagementTable() {
   const [editUser, setEditUser] = useState<User | null | undefined>(undefined);
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [confirmState, setConfirmState] = useState<{
+    title: string; message: string; confirmLabel: string;
+    variant: "danger" | "warning"; onConfirm: () => void;
+  } | null>(null);
 
   async function fetchUsers() {
     const res = await fetch("/api/admin/users");
@@ -233,30 +240,62 @@ export default function UserManagementTable() {
   }
 
   async function handleInvite(userId: string) {
-    await fetch(`/api/admin/users/${userId}/invite`, { method: "POST" });
+    const res = await fetch(`/api/admin/users/${userId}/invite`, { method: "POST" });
+    if (res.ok) toast.success("Invitation sent");
+    else toast.error("Failed to send invitation.");
     await fetchUsers();
   }
 
-  async function handleDeactivate(userId: string) {
-    if (!confirm("Deactivate this user? They will no longer be able to sign in.")) return;
-    await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "pending" }),
+  function promptDeactivate(userId: string) {
+    setConfirmState({
+      title: "Deactivate User",
+      message: "This user will no longer be able to sign in.",
+      confirmLabel: "Deactivate",
+      variant: "warning",
+      onConfirm: async () => {
+        setConfirmState(null);
+        const res = await fetch(`/api/admin/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "pending" }),
+        });
+        if (res.ok) toast.success("User deactivated");
+        else toast.error("Failed to deactivate user.");
+        await fetchUsers();
+      },
     });
-    await fetchUsers();
   }
 
-  async function handleRevokeInvite(userId: string) {
-    if (!confirm("Revoke this invitation? The email link will be invalidated.")) return;
-    await fetch(`/api/admin/users/${userId}/revoke-invite`, { method: "POST" });
-    await fetchUsers();
+  function promptRevokeInvite(userId: string) {
+    setConfirmState({
+      title: "Revoke Invitation",
+      message: "The invitation email link will be invalidated immediately.",
+      confirmLabel: "Revoke",
+      variant: "warning",
+      onConfirm: async () => {
+        setConfirmState(null);
+        const res = await fetch(`/api/admin/users/${userId}/revoke-invite`, { method: "POST" });
+        if (res.ok) toast.success("Invitation revoked");
+        else toast.error("Failed to revoke invitation.");
+        await fetchUsers();
+      },
+    });
   }
 
-  async function handleDelete(userId: string) {
-    if (!confirm("Permanently delete this user? This cannot be undone.")) return;
-    await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
-    await fetchUsers();
+  function promptDelete(userId: string) {
+    setConfirmState({
+      title: "Delete User",
+      message: "This user will be permanently deleted and cannot be recovered.",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmState(null);
+        const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+        if (res.ok) toast.success("User deleted");
+        else toast.error("Failed to delete user.");
+        await fetchUsers();
+      },
+    });
   }
 
   function handleSaved(user: User) {
@@ -459,7 +498,7 @@ export default function UserManagementTable() {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleDelete(user.id)}
+                                onClick={() => promptDelete(user.id)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
@@ -481,13 +520,13 @@ export default function UserManagementTable() {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleRevokeInvite(user.id)}
+                                onClick={() => promptRevokeInvite(user.id)}
                                 className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-medium transition-colors border border-amber-200"
                               >
                                 Revoke
                               </button>
                               <button
-                                onClick={() => handleDelete(user.id)}
+                                onClick={() => promptDelete(user.id)}
                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
@@ -509,7 +548,7 @@ export default function UserManagementTable() {
                                 </svg>
                               </button>
                               <button
-                                onClick={() => handleDeactivate(user.id)}
+                                onClick={() => promptDeactivate(user.id)}
                                 className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors border border-red-200"
                               >
                                 Deactivate
@@ -533,6 +572,18 @@ export default function UserManagementTable() {
           user={editUser}
           onClose={() => setEditUser(undefined)}
           onSave={handleSaved}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {confirmState && (
+        <ConfirmDialog
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          variant={confirmState.variant}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
         />
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 interface ProfileData {
   id: string;
@@ -94,6 +95,7 @@ function AvatarUpload({
       const res = await fetch("/api/profile/avatar", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Upload failed."); return; }
+      toast.success("Profile photo updated");
       onUploaded(data.data.avatarUrl);
       setPreview(null);
       setPendingFile(null);
@@ -108,6 +110,7 @@ function AvatarUpload({
     setRemoving(true);
     try {
       await fetch("/api/profile/avatar", { method: "DELETE" });
+      toast.success("Profile photo removed");
       onRemoved();
     } finally {
       setRemoving(false);
@@ -252,6 +255,7 @@ export default function ProfilePage() {
       setProfile((prev) => prev ? { ...prev, fullName: data.data.user.fullName } : prev);
       setNameSuccess(true);
       setEditName(false);
+      toast.success("Name updated successfully");
       setTimeout(() => setNameSuccess(false), 3000);
     } catch {
       setNameError("Network error.");
@@ -286,6 +290,7 @@ export default function ProfilePage() {
       setNewPassword("");
       setConfirmPassword("");
       setShowPwForm(false);
+      toast.success("Password updated successfully");
       setTimeout(() => setPwSuccess(false), 4000);
     } catch {
       setPwError("Network error.");

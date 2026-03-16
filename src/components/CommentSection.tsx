@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Comment } from "@/types";
 import {
   MentionTextarea,
   renderMentions,
   ActiveUser,
 } from "@/components/MentionTextarea";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface CommentSectionProps {
   taskId: string;
@@ -59,6 +61,7 @@ function CommentItem({
   const [replyContent, setReplyContent] = useState("");
   const [replyMentionedIds, setReplyMentionedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const canModify =
     comment.author.id === currentUserId || currentUserRole === "admin";
@@ -82,6 +85,7 @@ function CommentItem({
   }
 
   return (
+    <>
     <div className="flex gap-3">
       <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
         {getInitials(comment.author.fullName)}
@@ -150,7 +154,7 @@ function CommentItem({
                   Edit
                 </button>
                 <button
-                  onClick={() => onDelete(comment.id)}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="text-xs text-gray-500 hover:text-red-600 font-medium transition-colors"
                 >
                   Delete
@@ -218,6 +222,17 @@ function CommentItem({
         )}
       </div>
     </div>
+    {showDeleteConfirm && (
+      <ConfirmDialog
+        title="Delete Comment"
+        message="This comment and its replies will be permanently deleted."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => { setShowDeleteConfirm(false); onDelete(comment.id); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    )}
+    </>
   );
 }
 
@@ -260,18 +275,25 @@ export default function CommentSection({
   async function handlePost() {
     if (!newComment.trim()) return;
     setPosting(true);
-    await fetch(`/api/tasks/${taskId}/comments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: newComment.trim(),
-        mentionedUserIds,
-      }),
-    });
-    setNewComment("");
-    setMentionedUserIds([]);
-    await fetchComments();
-    setPosting(false);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newComment.trim(), mentionedUserIds }),
+      });
+      if (res.ok) {
+        setNewComment("");
+        setMentionedUserIds([]);
+        toast.success("Comment posted");
+        await fetchComments();
+      } else {
+        toast.error("Failed to post comment.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function handleReply(
@@ -279,26 +301,31 @@ export default function CommentSection({
     content: string,
     replyMentionedUserIds: string[]
   ) {
-    await fetch(`/api/tasks/${taskId}/comments`, {
+    const res = await fetch(`/api/tasks/${taskId}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, parentId, mentionedUserIds: replyMentionedUserIds }),
     });
+    if (res.ok) toast.success("Reply posted");
+    else toast.error("Failed to post reply.");
     await fetchComments();
   }
 
   async function handleEdit(id: string, content: string) {
-    await fetch(`/api/comments/${id}`, {
+    const res = await fetch(`/api/comments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content }),
     });
+    if (res.ok) toast.success("Comment updated");
+    else toast.error("Failed to update comment.");
     await fetchComments();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this comment?")) return;
-    await fetch(`/api/comments/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/comments/${id}`, { method: "DELETE" });
+    if (res.ok) toast.success("Comment deleted");
+    else toast.error("Failed to delete comment.");
     await fetchComments();
   }
 

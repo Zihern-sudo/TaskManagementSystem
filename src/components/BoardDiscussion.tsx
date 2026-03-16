@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { toast } from "sonner";
 import { BoardComment, TaskCommentFeed, SessionUser } from "@/types";
 import {
   MentionTextarea,
   renderMentions,
   ActiveUser,
 } from "@/components/MentionTextarea";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface BoardDiscussionProps {
   currentUser: SessionUser;
@@ -181,6 +183,7 @@ function CommentItem({
   const [replyContent, setReplyContent] = useState("");
   const [replyMentionedIds, setReplyMentionedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const canModify =
     comment.author.id === currentUser.id || currentUser.role === "admin";
@@ -204,6 +207,7 @@ function CommentItem({
   }
 
   return (
+    <>
     <div className={`flex gap-3 ${isReply ? "pl-10" : ""}`}>
       <div
         className={`w-8 h-8 rounded-full ${avatarColor(
@@ -357,7 +361,7 @@ function CommentItem({
                   Edit
                 </button>
                 <button
-                  onClick={() => onDelete(comment.id)}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
                 >
                   Delete
@@ -427,6 +431,17 @@ function CommentItem({
         )}
       </div>
     </div>
+    {showDeleteConfirm && (
+      <ConfirmDialog
+        title="Delete Comment"
+        message="This comment and all its replies will be permanently deleted."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => { setShowDeleteConfirm(false); onDelete(comment.id); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+    )}
+    </>
   );
 }
 
@@ -550,8 +565,13 @@ export default function BoardDiscussion({
       if (res.ok) {
         setNewComment("");
         setMentionedUserIds([]);
+        toast.success("Comment posted");
         await fetchComments();
+      } else {
+        toast.error("Failed to post comment.");
       }
+    } catch {
+      toast.error("Network error. Please try again.");
     } finally {
       setPosting(false);
     }
@@ -562,26 +582,31 @@ export default function BoardDiscussion({
     content: string,
     replyMentionedUserIds: string[]
   ) {
-    await fetch("/api/board-comments", {
+    const res = await fetch("/api/board-comments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, parentId, mentionedUserIds: replyMentionedUserIds }),
     });
+    if (res.ok) toast.success("Reply posted");
+    else toast.error("Failed to post reply.");
     await fetchComments();
   }
 
   async function handleEdit(id: string, content: string) {
-    await fetch(`/api/board-comments/${id}`, {
+    const res = await fetch(`/api/board-comments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content }),
     });
+    if (res.ok) toast.success("Comment updated");
+    else toast.error("Failed to update comment.");
     await fetchComments();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this comment?")) return;
-    await fetch(`/api/board-comments/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/board-comments/${id}`, { method: "DELETE" });
+    if (res.ok) toast.success("Comment deleted");
+    else toast.error("Failed to delete comment.");
     await fetchComments();
   }
 
@@ -599,36 +624,30 @@ export default function BoardDiscussion({
   }
 
   async function handlePin(commentId: string) {
+    const current = comments.find((c) => c.id === commentId);
+    const willPin = current ? !current.pinned : true;
     setComments((prev) =>
       prev.map((c) =>
         c.id === commentId
-          ? {
-              ...c,
-              pinned: !c.pinned,
-              pinnedAt: !c.pinned ? new Date().toISOString() : null,
-            }
+          ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
           : c
       )
     );
     try {
-      const res = await fetch(`/api/board-comments/${commentId}/pin`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/board-comments/${commentId}/pin`, { method: "POST" });
       if (!res.ok) {
         // revert
         setComments((prev) =>
           prev.map((c) =>
             c.id === commentId
-              ? {
-                  ...c,
-                  pinned: !c.pinned,
-                  pinnedAt: !c.pinned ? new Date().toISOString() : null,
-                }
+              ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
               : c
           )
         );
+        toast.error("Failed to update pin.");
         return;
       }
+      toast.success(willPin ? "Comment pinned" : "Comment unpinned", { duration: 2000 });
     } finally {
       fetchComments();
     }

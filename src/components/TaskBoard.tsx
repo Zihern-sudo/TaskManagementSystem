@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { toast } from "sonner";
 import {
   DndContext,
   DragEndEvent,
@@ -530,13 +531,19 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus } : t));
 
     try {
-      await fetch(`/api/tasks/${taskId}/status`, {
+      const res = await fetch(`/api/tasks/${taskId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (res.ok) {
+        toast.success(`Moved to ${STATUS_LABELS[newStatus]}`, { duration: 2000 });
+      } else {
+        throw new Error();
+      }
     } catch {
       setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: task.status } : t));
+      toast.error("Failed to update task status.");
     }
   }
 
@@ -557,7 +564,9 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    await fetch(`/api/tasks/${deleteTarget.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/tasks/${deleteTarget.id}`, { method: "DELETE" });
+    if (res.ok) toast.success("Task deleted");
+    else toast.error("Failed to delete task.");
     handleTaskDeleted(deleteTarget.id);
   }
 
