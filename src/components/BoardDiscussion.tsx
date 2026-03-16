@@ -62,8 +62,11 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
   async function handleReact(emoji: string) {
     if (inFlight) return;
     setInFlight(emoji);
-    await onReact(commentId, emoji);
-    setInFlight(null);
+    try {
+      await onReact(commentId, emoji);
+    } finally {
+      setInFlight(null);
+    }
   }
 
   return (
@@ -72,7 +75,7 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
         <button
           key={r.emoji}
           onClick={() => handleReact(r.emoji)}
-          disabled={inFlight === r.emoji}
+          disabled={!!inFlight}
           className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
             r.reacted
               ? "bg-blue-100 border-blue-300 text-blue-700 font-medium"
