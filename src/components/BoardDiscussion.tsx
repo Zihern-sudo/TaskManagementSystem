@@ -376,14 +376,19 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
   async function handlePost() {
     if (!newComment.trim()) return;
     setPosting(true);
-    await fetch("/api/board-comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: newComment.trim() }),
-    });
-    setNewComment("");
-    await fetchComments();
-    setPosting(false);
+    try {
+      const res = await fetch("/api/board-comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newComment.trim() }),
+      });
+      if (res.ok) {
+        setNewComment("");
+        await fetchComments();
+      }
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function handleReply(parentId: string, content: string) {
@@ -436,7 +441,18 @@ export default function BoardDiscussion({ currentUser }: BoardDiscussionProps) {
       )
     );
     try {
-      await fetch(`/api/board-comments/${commentId}/pin`, { method: "POST" });
+      const res = await fetch(`/api/board-comments/${commentId}/pin`, { method: "POST" });
+      if (!res.ok) {
+        // Revert optimistic update if pin failed
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === commentId
+              ? { ...c, pinned: !c.pinned, pinnedAt: !c.pinned ? new Date().toISOString() : null }
+              : c
+          )
+        );
+        return;
+      }
     } finally {
       fetchComments();
     }

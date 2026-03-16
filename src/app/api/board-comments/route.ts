@@ -195,15 +195,34 @@ export async function POST(req: NextRequest) {
     if (parent.parentId) return fail("Replies to replies are not allowed.", 400);
   }
 
-  const comment = await db.boardComment.create({
-    data: {
-      content: (content as string).trim(),
-      authorId: caller.id,
-      ...(parentId ? { parentId: parentId as string } : {}),
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    select: BOARD_COMMENT_SELECT as any,
-  });
+  let comment: any;
+  try {
+    comment = await db.boardComment.create({
+      data: {
+        content: (content as string).trim(),
+        authorId: caller.id,
+        ...(parentId ? { parentId: parentId as string } : {}),
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      select: BOARD_COMMENT_SELECT as any,
+    });
+  } catch {
+    // Fallback: create without pinned/pinnedAt for old cached Prisma client
+    comment = await db.boardComment.create({
+      data: {
+        content: (content as string).trim(),
+        authorId: caller.id,
+        ...(parentId ? { parentId: parentId as string } : {}),
+      },
+      select: {
+        id: true, content: true, parentId: true,
+        author: { select: AUTHOR_SELECT },
+        reactions: { select: REACTION_SELECT },
+        replies: { select: { id: true, content: true, parentId: true, author: { select: AUTHOR_SELECT }, reactions: { select: REACTION_SELECT }, replies: { select: { id: true } }, createdAt: true, updatedAt: true }, orderBy: { createdAt: "asc" as const } },
+        createdAt: true, updatedAt: true,
+      },
+    });
+  }
 
   return ok("Comment posted.", { comment: serializeBoardComment(comment, caller.id) }, 201);
 }
