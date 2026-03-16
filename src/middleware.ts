@@ -38,6 +38,7 @@ export async function middleware(req: NextRequest) {
     headers.set("x-user-id", session.id);
     headers.set("x-user-email", session.email);
     headers.set("x-user-role", session.role);
+    headers.set("x-user-name", session.name);
     return NextResponse.next({ request: { headers } });
   }
 

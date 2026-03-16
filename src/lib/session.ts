@@ -80,6 +80,7 @@ export async function clearSessionCookie(): Promise<void> {
 export interface RequestUser {
   id: string;
   email: string;
+  name: string;
   role: Role;
 }
 
@@ -93,9 +94,10 @@ export function getRequestUser(req: { headers: Headers }): RequestUser | null {
   const id = req.headers.get("x-user-id");
   const email = req.headers.get("x-user-email");
   const role = req.headers.get("x-user-role") as Role | null;
+  const name = req.headers.get("x-user-name") ?? "";
 
   if (!id || !email || !role) return null;
-  return { id, email, role };
+  return { id, email, name, role };
 }
 
 // ── Safe user payload builder ──────────────────────────────────────────────
