@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   DndContext,
   DragEndEvent,
@@ -230,11 +232,12 @@ interface ListViewProps {
   onDelete: (task: Task) => void;
   currentUserId: string;
   currentUserRole: string;
+  exportTrigger: number;
 }
 
 const PAGE_SIZE = 10;
 
-function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole }: ListViewProps) {
+function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole, exportTrigger }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
@@ -262,8 +265,61 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
   const currentPage = Math.min(page, totalPages);
   const paginated = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
+  useEffect(() => {
+    if (exportTrigger > 0) exportToPDF();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportTrigger]);
+
   function canModify(task: Task) {
     return currentUserRole === "admin" || task.assignees.some((a) => a.id === currentUserId);
+  }
+
+  function exportToPDF() {
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Task List", 14, 16);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Exported on ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}  •  Showing page ${currentPage} of ${totalPages}  •  ${paginated.length} task(s)`, 14, 23);
+    doc.setTextColor(0, 0, 0);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["#", "Title", "Status", "Priority", "Assignees", "Due Date", "Created"]],
+      body: paginated.map((task, idx) => [
+        (currentPage - 1) * PAGE_SIZE + idx + 1,
+        task.title,
+        STATUS_LABELS[task.status],
+        PRIORITY_LABELS[task.priority],
+        task.assignees.length > 0
+          ? task.assignees.map((a) => `${a.fullName}${a.email ? ` (${a.email})` : ""}`).join(", ")
+          : "—",
+        task.dueDate
+          ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : "—",
+        new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      ]),
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold", fontSize: 9 },
+      bodyStyles: { fontSize: 8.5 },
+      alternateRowStyles: { fillColor: [245, 247, 255] },
+      columnStyles: {
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 80 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 28 },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.save(`task-list-page-${currentPage}.pdf`);
+    toast.success("PDF exported successfully!");
   }
 
   return (
@@ -486,6 +542,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "">("");
   const [filterAssignedToMe, setFilterAssignedToMe] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
+  const [exportTrigger, setExportTrigger] = useState(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -702,6 +759,19 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             </button>
           </div>
 
+          {/* Export to PDF — only in list view */}
+          {view === "list" && (
+            <button
+              onClick={() => setExportTrigger((n) => n + 1)}
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 transition-colors"
+            >
+              <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              Export PDF
+            </button>
+          )}
+
           {/* Create task */}
           <button
             onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
@@ -749,6 +819,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             onDelete={(task) => setDeleteTarget(task)}
             currentUserId={currentUser.id}
             currentUserRole={currentUser.role}
+            exportTrigger={exportTrigger}
           />
         )}
       </div>
