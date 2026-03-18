@@ -41,8 +41,9 @@ export default function LoginPage() {
     }
   }, [searchParams]);
 
-  async function handleForgotPassword(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleForgotPassword(e?: React.FormEvent | React.KeyboardEvent) {
+    e?.preventDefault();
+    if (!forgotEmail) return;
     setForgotLoading(true);
     setForgotError("");
     try {
@@ -306,16 +307,16 @@ export default function LoginPage() {
                           </button>
                         </div>
                       ) : (
-                        <form onSubmit={handleForgotPassword} className="space-y-3">
+                        <div className="space-y-3">
                           <p className="text-xs font-semibold text-blue-700">Reset your password</p>
                           <p className="text-xs text-blue-600">Enter your email and we&apos;ll send you a reset link.</p>
                           <input
                             type="email"
                             value={forgotEmail}
                             onChange={(e) => setForgotEmail(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleForgotPassword(e as unknown as React.FormEvent); } }}
                             className="w-full border border-blue-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
                             placeholder="you@company.com"
-                            required
                             autoFocus
                           />
                           {forgotError && (
@@ -323,8 +324,9 @@ export default function LoginPage() {
                           )}
                           <div className="flex items-center gap-2">
                             <button
-                              type="submit"
-                              disabled={forgotLoading}
+                              type="button"
+                              onClick={handleForgotPassword}
+                              disabled={forgotLoading || !forgotEmail}
                               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors"
                             >
                               {forgotLoading ? (
@@ -345,7 +347,7 @@ export default function LoginPage() {
                               Cancel
                             </button>
                           </div>
-                        </form>
+                        </div>
                       )}
                     </div>
                   )}
