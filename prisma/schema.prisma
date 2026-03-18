@@ -53,10 +53,12 @@ model User {
   avatarUrl     String?
 
   // Temporary tokens
-  inviteToken       String?   @unique
-  inviteTokenExpiry DateTime?
-  magicLinkToken    String?   @unique
-  magicLinkExpiry   DateTime?
+  inviteToken           String?   @unique
+  inviteTokenExpiry     DateTime?
+  magicLinkToken        String?   @unique
+  magicLinkExpiry       DateTime?
+  passwordResetToken    String?   @unique
+  passwordResetExpiry   DateTime?
 
   // Relations
   taskAssignments TaskAssignee[]
