@@ -7,6 +7,11 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/logout",
   "/api/auth/invite/verify",
   "/api/auth/invite/accept",
+  // NextAuth OAuth routes (Google SSO)
+  "/api/auth/signin",
+  "/api/auth/callback",
+  "/api/auth/csrf",
+  "/api/auth/providers",
 ];
 
 const ADMIN_API_PREFIXES = ["/api/admin"];
