@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
   const task = await db.task.create({
     data: {
       title: (title as string).trim(),
-      ...(description !== undefined && { description: (description as string).trim() || null }),
+      ...(description !== undefined && { description: typeof description === "string" ? description.trim() || null : null }),
       ...(status !== undefined && { status: status as TaskStatus }),
       ...(priority !== undefined && { priority: priority as TaskPriority }),
       ...(parsedDueDate !== undefined && { dueDate: parsedDueDate }),
