@@ -901,15 +901,28 @@ export default function BoardDiscussion({
   }
 
   async function handleReact(commentId: string, emoji: string) {
+    // Apply optimistic update immediately for snappy UI
     setComments((prev) => applyOptimisticReaction(prev, commentId, emoji));
     try {
-      await fetch(`/api/board-comments/${commentId}/react`, {
+      const res = await fetch(`/api/board-comments/${commentId}/react`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emoji }),
       });
+      if (!res.ok) {
+        // Revert optimistic update on failure by re-applying the toggle
+        setComments((prev) => applyOptimisticReaction(prev, commentId, emoji));
+        toast.error("Failed to update reaction.");
+      }
+    } catch {
+      // Revert on network error
+      setComments((prev) => applyOptimisticReaction(prev, commentId, emoji));
+      toast.error("Network error. Please try again.");
     } finally {
-      fetchComments();
+      // Await so inFlight stays active until the server state is fully synced.
+      // This prevents a second click from firing while the state is stale
+      // (optimistic), which would toggle in the wrong direction.
+      await fetchComments();
     }
   }
 
