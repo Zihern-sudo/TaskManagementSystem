@@ -46,7 +46,7 @@ model User {
   id            String        @id @default(cuid())
   fullName      String
   email         String        @unique
-  password      String
+  password      String?
   role          Role          @default(member)
   status        AccountStatus @default(pending)
 
