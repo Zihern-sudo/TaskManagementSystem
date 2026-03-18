@@ -22,6 +22,12 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState("");
 
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,6 +40,31 @@ export default function LoginPage() {
       setGoogleError("Google sign-in failed. Please try again.");
     }
   }, [searchParams]);
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotError("");
+    try {
+      await fetch("/api/auth/password-reset/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      setForgotSent(true);
+    } catch {
+      setForgotError("Network error. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  function closeForgot() {
+    setForgotOpen(false);
+    setForgotEmail("");
+    setForgotSent(false);
+    setForgotError("");
+  }
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
@@ -224,7 +255,16 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-sm font-medium text-gray-700">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => { setForgotOpen(!forgotOpen); setForgotSent(false); setForgotError(""); }}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                     <div className="relative">
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -242,6 +282,73 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Inline forgot-password panel */}
+                  {forgotOpen && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-4">
+                      {forgotSent ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2 text-blue-700">
+                            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-sm font-semibold">Check your inbox</span>
+                          </div>
+                          <p className="text-xs text-blue-600 leading-relaxed">
+                            If <span className="font-medium">{forgotEmail}</span> is registered, a reset link has been sent. It expires in 1 hour.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={closeForgot}
+                            className="self-start text-xs text-blue-700 hover:text-blue-800 font-medium hover:underline mt-1"
+                          >
+                            Back to sign in
+                          </button>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleForgotPassword} className="space-y-3">
+                          <p className="text-xs font-semibold text-blue-700">Reset your password</p>
+                          <p className="text-xs text-blue-600">Enter your email and we&apos;ll send you a reset link.</p>
+                          <input
+                            type="email"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            className="w-full border border-blue-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+                            placeholder="you@company.com"
+                            required
+                            autoFocus
+                          />
+                          {forgotError && (
+                            <p className="text-xs text-red-600">{forgotError}</p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="submit"
+                              disabled={forgotLoading}
+                              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors"
+                            >
+                              {forgotLoading ? (
+                                <>
+                                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                  </svg>
+                                  Sending...
+                                </>
+                              ) : "Send reset link"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeForgot}
+                              className="px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  )}
 
                   {error && (
                     <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm">

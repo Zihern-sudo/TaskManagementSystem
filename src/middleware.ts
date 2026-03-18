@@ -12,6 +12,8 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/callback",
   "/api/auth/csrf",
   "/api/auth/providers",
+  // Forgot-password flow
+  "/api/auth/password-reset",
 ];
 
 const ADMIN_API_PREFIXES = ["/api/admin"];
@@ -48,7 +50,11 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── Public pages — no auth required ──────────────────────────────────────
-  if (pathname === "/accept-invite" || pathname.startsWith("/auth/magic")) {
+  if (
+    pathname === "/accept-invite" ||
+    pathname.startsWith("/auth/magic") ||
+    pathname === "/reset-password"
+  ) {
     return NextResponse.next();
   }
 

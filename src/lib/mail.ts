@@ -44,6 +44,29 @@ export function buildMagicLinkEmail(token: string, baseUrl: string) {
   };
 }
 
+export function buildPasswordResetEmail(token: string, baseUrl: string) {
+  const link = `${baseUrl}/reset-password?token=${token}`;
+  return {
+    subject: "Reset your RIO Task password",
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
+        <h2 style="font-size:18px;margin-bottom:8px">Reset your password</h2>
+        <p style="margin-bottom:16px">
+          We received a request to reset the password for your RIO Task account.
+          Click the button below to choose a new password.
+        </p>
+        <a href="${link}"
+           style="display:inline-block;padding:10px 20px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px">
+          Reset Password
+        </a>
+        <p style="margin-top:20px;font-size:13px;color:#6b7280">
+          This link expires in <strong>1 hour</strong>.
+          If you didn't request a password reset, you can safely ignore this email.
+        </p>
+      </div>`,
+  };
+}
+
 export function buildMentionEmail(
   mentionedByName: string,
   commentContent: string,
