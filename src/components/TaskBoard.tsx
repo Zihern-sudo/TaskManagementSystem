@@ -108,12 +108,12 @@ function SortTh({ field, label, sortField, sortDir, onSort, className }: {
   const active = sortField === field && sortDir !== "none";
   return (
     <th
-      className={`text-left px-4 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-50 transition-colors group ${className ?? ""}`}
+      className={`text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group ${active ? "text-indigo-600 bg-indigo-50/60" : "text-slate-500 hover:bg-slate-50/80 hover:text-slate-700"} ${className ?? ""}`}
       onClick={() => onSort(field)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {label}
-        <span className={`text-[10px] transition-opacity ${active ? "opacity-100 text-blue-600" : "opacity-0 group-hover:opacity-40"}`}>
+        <span className={`text-[10px] transition-all ${active ? "opacity-100 text-indigo-500" : "opacity-0 group-hover:opacity-50"}`}>
           {sortDir === "asc" && sortField === field ? "↑" : sortDir === "desc" && sortField === field ? "↓" : "↕"}
         </span>
       </div>
@@ -336,11 +336,13 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* Top accent bar */}
+      <div className="h-1" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)" }} />
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[480px]">
         <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
+          <tr className="border-b-2 border-slate-100 bg-gradient-to-b from-slate-50 to-white">
             <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
             <SortTh field="title" label="Title" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
             <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
@@ -348,18 +350,23 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
             <SortTh field="assignees" label="Assignees" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
             <SortTh field="dueDate" label="Due Date" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
             <SortTh field="createdAt" label="Created" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-            <th className="text-right px-4 py-3 font-semibold text-gray-600">Actions</th>
+            <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-50">
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={8} className="text-center py-16">
-                <div className="flex flex-col items-center gap-3 text-gray-400">
-                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <p className="text-sm">No tasks found</p>
+              <td colSpan={8} className="text-center py-20">
+                <div className="flex flex-col items-center gap-4 text-slate-400">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                    <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-600">No tasks found</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Try adjusting your filters</p>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -369,59 +376,63 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
               return (
               <tr
                 key={task.id}
-                className={`border-b border-gray-100 hover:bg-slate-50 transition-colors ${idx % 2 === 1 ? "bg-slate-50/30" : ""}`}
+                className="border-b border-slate-100 hover:bg-indigo-50/30 transition-colors group"
               >
-                <td className="px-4 py-3 text-gray-400 text-xs font-mono">{rowNum}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-4 text-slate-300 text-xs font-mono w-12">{rowNum}</td>
+                <td className="px-4 py-4">
                   <div
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-2.5 cursor-pointer"
                     onClick={() => onTaskClick(task)}
                   >
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-                    <span className="font-medium text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">{task.title}</span>
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]} ring-2 ring-white`} />
+                    <span className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1">{task.title}</span>
                   </div>
                   {task.description && (
-                    <p className="text-xs text-gray-400 mt-0.5 pl-4 line-clamp-1">{task.description}</p>
+                    <p className="text-xs text-slate-400 mt-0.5 pl-5 line-clamp-1">{task.description}</p>
                   )}
                 </td>
-                <td className="px-4 py-3 hidden md:table-cell">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[task.status]}`}>
+                <td className="px-4 py-4 hidden md:table-cell">
+                  <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${STATUS_COLORS[task.status]}`}>
                     {STATUS_LABELS[task.status]}
                   </span>
                 </td>
-                <td className="px-4 py-3 hidden lg:table-cell">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}>
+                <td className="px-4 py-4 hidden lg:table-cell">
+                  <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${PRIORITY_COLORS[task.priority]}`}>
                     {PRIORITY_LABELS[task.priority]}
                   </span>
                 </td>
-                <td className="px-4 py-3 hidden lg:table-cell">
+                <td className="px-4 py-4 hidden lg:table-cell">
                   {task.assignees.length > 0 ? (
                     <div className="flex items-center gap-2">
                       <AvatarGroup users={task.assignees} max={3} size="md" />
                       {task.assignees.length === 1 && (
-                        <span className="text-xs text-gray-600">{task.assignees[0].fullName}</span>
+                        <span className="text-xs text-slate-600 font-medium">{task.assignees[0].fullName}</span>
                       )}
                     </div>
                   ) : (
-                    <span className="text-gray-400 text-xs">—</span>
+                    <span className="text-slate-300 text-xs">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 hidden xl:table-cell">
+                <td className="px-4 py-4 hidden xl:table-cell">
                   {task.dueDate ? (() => {
                     const { formatted, overdue } = formatDueDate(task.dueDate!);
-                    return <span className={`text-xs ${overdue ? "text-red-500 font-medium" : "text-gray-500"}`}>{formatted}</span>;
-                  })() : <span className="text-gray-400 text-xs">—</span>}
+                    return (
+                      <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-md font-medium ${overdue ? "bg-red-50 text-red-600 border border-red-100" : "bg-slate-50 text-slate-500 border border-slate-100"}`}>
+                        {formatted}
+                      </span>
+                    );
+                  })() : <span className="text-slate-300 text-xs">—</span>}
                 </td>
-                <td className="px-4 py-3 hidden xl:table-cell text-xs text-gray-400">
+                <td className="px-4 py-4 hidden xl:table-cell text-xs text-slate-400 font-medium">
                   {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-1">
+                <td className="px-4 py-4">
+                  <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                     {/* View */}
                     <button
                       onClick={() => onTaskClick(task)}
                       title="View task"
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -433,7 +444,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                       <button
                         onClick={() => onEdit(task)}
                         title="Edit task"
-                        className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -445,7 +456,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                       <button
                         onClick={() => onDelete(task)}
                         title="Delete task"
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -464,15 +475,15 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-slate-50 rounded-b-xl">
-          <span className="text-xs text-gray-500">
+        <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/60">
+          <span className="text-xs text-slate-400 font-medium">
             Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sorted.length)} of {sorted.length} tasks
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
+              className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-600 transition-colors"
             >
               ← Prev
             </button>
@@ -485,16 +496,17 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
               }, [])
               .map((item, i) =>
                 item === "..." ? (
-                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400 select-none">…</span>
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-slate-300 select-none">…</span>
                 ) : (
                   <button
                     key={item}
                     onClick={() => setPage(item as number)}
-                    className={`w-7 h-7 text-xs rounded-lg font-medium transition-colors ${
+                    className={`w-7 h-7 text-xs rounded-lg font-semibold transition-all ${
                       item === currentPage
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "border border-gray-200 bg-white hover:bg-slate-50 text-gray-600"
+                        ? "text-white shadow-sm"
+                        : "border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 text-slate-600"
                     }`}
+                    style={item === currentPage ? { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" } : undefined}
                   >
                     {item}
                   </button>

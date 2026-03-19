@@ -112,17 +112,17 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
 };
 
 export const STATUS_COLORS: Record<TaskStatus, string> = {
-  not_started: 'bg-gray-100 text-gray-600',
-  in_progress: 'bg-blue-100 text-blue-700',
-  in_review: 'bg-yellow-100 text-yellow-700',
-  completed: 'bg-green-100 text-green-700',
+  not_started: 'bg-slate-100 text-slate-600 border-slate-200',
+  in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
+  in_review: 'bg-amber-50 text-amber-700 border-amber-200',
+  completed: 'bg-green-50 text-green-700 border-green-200',
 };
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  low: 'bg-gray-100 text-gray-500',
-  medium: 'bg-blue-100 text-blue-600',
-  high: 'bg-orange-100 text-orange-600',
-  critical: 'bg-red-100 text-red-600',
+  low: 'bg-slate-100 text-slate-500 border-slate-200',
+  medium: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+  high: 'bg-orange-50 text-orange-600 border-orange-200',
+  critical: 'bg-red-50 text-red-600 border-red-200',
 };
 
 export const PRIORITY_DOT: Record<TaskPriority, string> = {
