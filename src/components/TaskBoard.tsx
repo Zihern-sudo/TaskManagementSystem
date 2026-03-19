@@ -10,6 +10,7 @@ import {
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -548,7 +549,8 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
   const fetchTasks = useCallback(async () => {
