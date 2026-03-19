@@ -9,7 +9,7 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -541,6 +541,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isNewTask, setIsNewTask] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const justDragged = useRef(false);
   const [search, setSearch] = useState("");
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "">("");
   const [filterAssignedToMe, setFilterAssignedToMe] = useState(false);
@@ -549,8 +550,10 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+    // MouseSensor handles only real mouse events — never touch-synthesized pointer events
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // TouchSensor handles mobile exclusively; 250ms hold distinguishes drag from scroll
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
   );
 
   const fetchTasks = useCallback(async () => {
@@ -577,10 +580,14 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   function handleDragStart(event: DragStartEvent) {
+    justDragged.current = false;
     setActiveId(event.active.id as string);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
+    // Mark that a drag just finished so the synthesized touch-click is suppressed
+    justDragged.current = true;
+    setTimeout(() => { justDragged.current = false; }, 300);
     setActiveId(null);
     const { active, over } = event;
     if (!over) return;
@@ -832,7 +839,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                   key={col.id}
                   column={col}
                   tasks={filteredTasks.filter((t) => t.status === col.id)}
-                  onTaskClick={(task) => { setSelectedTask(task); setIsNewTask(false); }}
+                  onTaskClick={(task) => { if (!justDragged.current) { setSelectedTask(task); setIsNewTask(false); } }}
                   activeId={activeId}
                 />
               ))}
