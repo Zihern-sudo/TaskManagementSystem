@@ -198,14 +198,17 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
     setSaving(true);
     setError("");
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         title: title.trim(),
         description: description.trim() || null,
         status,
         priority,
         dueDate: dueDate || null,
-        assigneeIds,
       };
+      // Only admins can set/change assignees
+      if (currentUserRole === "admin") {
+        body.assigneeIds = assigneeIds;
+      }
       const res = await fetch(isNew ? "/api/tasks" : `/api/tasks/${task!.id}`, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -458,8 +461,30 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 />
               </MetaField>
 
-              <MetaField label="Assignees (up to 5)">
-                <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
+              <MetaField label="Assignees">
+                {currentUserRole === "admin" ? (
+                  <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 min-h-[38px] items-center">
+                    {users.filter((u) => assigneeIds.includes(u.id)).length === 0 ? (
+                      <span className="text-sm text-slate-400">Unassigned</span>
+                    ) : (
+                      users.filter((u) => assigneeIds.includes(u.id)).map((u, i) => (
+                        <span key={u.id} className="flex items-center gap-1 bg-slate-100 text-slate-700 text-xs rounded-full px-2.5 py-1">
+                          <span
+                            className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white overflow-hidden shrink-0`}
+                            style={{ fontSize: "8px", fontWeight: "bold" }}
+                          >
+                            {u.avatarUrl
+                              ? <Image src={u.avatarUrl} alt={u.fullName} width={16} height={16} className="w-full h-full object-cover" unoptimized />
+                              : getInitials(u.fullName)}
+                          </span>
+                          {u.fullName.split(" ")[0]}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
               </MetaField>
 
               {/* Priority badge preview */}
