@@ -181,7 +181,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 lg:px-12 relative z-10">
         <div className="w-full max-w-md">
           {/* Card */}
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] overflow-hidden">
             {/* Top accent bar */}
             <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #1d4ed8, #3b82f6, #60a5fa)" }} />
 
@@ -202,7 +202,7 @@ export default function LoginPage() {
               </div>
 
               {/* Mode tabs */}
-              <div className="flex rounded-xl border border-gray-200 p-1 mb-7 bg-gray-50">
+              <div className="flex rounded-lg border border-slate-200 p-1 mb-6 bg-slate-50">
                 {(["password", "magic"] as LoginMode[]).map((m) => (
                   <button
                     key={m}
@@ -210,7 +210,7 @@ export default function LoginPage() {
                     className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-lg transition-all ${
                       mode === m
                         ? "bg-white text-blue-600 shadow-sm font-semibold"
-                        : "text-gray-400 hover:text-gray-600"
+                        : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
                     {m === "password" ? (
@@ -236,7 +236,7 @@ export default function LoginPage() {
               {mode === "password" && (
                 <form onSubmit={handlePasswordLogin} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email address</label>
                     <div className="relative">
                       <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -247,7 +247,7 @@ export default function LoginPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition"
+                        className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 transition"
                         placeholder="you@company.com"
                         required
                         autoComplete="email"
@@ -257,7 +257,7 @@ export default function LoginPage() {
 
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-sm font-medium text-gray-700">Password</label>
+                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Password</label>
                       <button
                         type="button"
                         onClick={() => { setForgotOpen(!forgotOpen); setForgotSent(false); setForgotError(""); }}
@@ -276,7 +276,7 @@ export default function LoginPage() {
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition"
+                        className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 transition"
                         placeholder="••••••••"
                         required
                         autoComplete="current-password"
@@ -413,7 +413,7 @@ export default function LoginPage() {
                   ) : (
                     <form onSubmit={handleMagicLink} className="space-y-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email address</label>
                         <div className="relative">
                           <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -424,7 +424,7 @@ export default function LoginPage() {
                             type="email"
                             value={magicEmail}
                             onChange={(e) => setMagicEmail(e.target.value)}
-                            className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition"
+                            className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 transition"
                             placeholder="you@company.com"
                             required
                             autoComplete="email"

@@ -66,7 +66,7 @@ function SortTh({
   const active = sortField === field && sortDir !== "none";
   return (
     <th
-      className={`text-left px-5 py-3.5 font-semibold text-gray-600 cursor-pointer select-none hover:bg-gray-100 transition-colors group ${className ?? ""}`}
+      className={`text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-50 transition-colors group ${className ?? ""}`}
       onClick={() => onSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -118,19 +118,19 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] w-full max-w-md overflow-hidden">
         {/* Modal header with accent */}
         <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-blue-400" />
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
               <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-gray-900">{isEdit ? "Edit User" : "Add New User"}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{isEdit ? "Edit User" : "Add New User"}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -139,33 +139,33 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
               placeholder="John Doe"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isEdit}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition"
+              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition"
               placeholder="john@company.com"
             />
-            {isEdit && <p className="text-xs text-gray-400 mt-1">Email cannot be changed after creation.</p>}
+            {isEdit && <p className="text-xs text-slate-400 mt-1">Email cannot be changed after creation.</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -182,12 +182,12 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition">Cancel</button>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition">Cancel</button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl flex items-center gap-2 transition"
+            className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2 transition"
           >
             {saving ? (
               <>
@@ -323,10 +323,10 @@ export default function UserManagementTable() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-slate-200 sticky top-0 z-10">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">User Management</h1>
-          <p className="text-sm text-gray-500">{users.length} total users</p>
+          <h1 className="text-xl font-bold text-slate-900">User Management</h1>
+          <p className="text-sm text-slate-500">{users.length} total users</p>
         </div>
         <button
           onClick={() => setEditUser(null)}
@@ -340,28 +340,28 @@ export default function UserManagementTable() {
       </div>
 
       {/* Stats bar */}
-      <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-6">
+      <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-100 flex items-center gap-6">
         <div className="flex items-center gap-1.5 text-sm">
           <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="font-semibold text-gray-800">{activeCount}</span>
-          <span className="text-gray-400">active</span>
+          <span className="font-semibold text-slate-800">{activeCount}</span>
+          <span className="text-slate-400">active</span>
         </div>
         <div className="flex items-center gap-1.5 text-sm">
           <div className="w-2 h-2 rounded-full bg-amber-400" />
-          <span className="font-semibold text-gray-800">{invitedCount}</span>
-          <span className="text-gray-400">invited</span>
+          <span className="font-semibold text-slate-800">{invitedCount}</span>
+          <span className="text-slate-400">invited</span>
         </div>
         <div className="flex items-center gap-1.5 text-sm">
           <div className="w-2 h-2 rounded-full bg-gray-400" />
-          <span className="font-semibold text-gray-800">{pendingCount}</span>
-          <span className="text-gray-400">pending</span>
+          <span className="font-semibold text-slate-800">{pendingCount}</span>
+          <span className="text-slate-400">pending</span>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-3 flex-wrap">
+      <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-100 flex items-center gap-3 flex-wrap">
         <div className="relative">
-          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -369,13 +369,13 @@ export default function UserManagementTable() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email..."
-            className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
           />
         </div>
         <select
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value as UserRole | "")}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
@@ -384,7 +384,7 @@ export default function UserManagementTable() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as AccountStatus | "")}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -394,7 +394,7 @@ export default function UserManagementTable() {
         {(search || filterRole || filterStatus) && (
           <button
             onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }}
-            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition"
+            className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -402,13 +402,13 @@ export default function UserManagementTable() {
             Clear filters
           </button>
         )}
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} of {users.length} shown</span>
+        <span className="ml-auto text-xs text-slate-400">{filtered.length} of {users.length} shown</span>
       </div>
 
       {/* Table */}
       <div className="flex-1 p-6 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-48 gap-3 text-gray-400">
+          <div className="flex items-center justify-center h-48 gap-3 text-slate-400">
             <svg className="w-5 h-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -416,25 +416,25 @@ export default function UserManagementTable() {
             Loading users...
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
               <thead>
-                <tr className="border-b-2 border-gray-200 bg-gray-50">
+                <tr className="border-b border-slate-200 bg-slate-50">
                   <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
                   <SortTh field="fullName" label="User" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <SortTh field="role" label="Role" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                   <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortTh field="createdAt" label="Joined" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-                  <th className="text-right px-5 py-3.5 font-semibold text-gray-600">Actions</th>
+                  <th className="text-right px-5 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-16">
-                      <div className="flex flex-col items-center gap-3 text-gray-400">
-                        <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="flex flex-col items-center gap-3 text-slate-400">
+                        <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <p className="text-sm">No users found</p>
@@ -445,9 +445,9 @@ export default function UserManagementTable() {
                   sorted.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""}`}
+                      className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${idx % 2 === 1 ? "bg-slate-50/30" : ""}`}
                     >
-                      <td className="px-5 py-4 text-gray-400 text-xs font-mono">{idx + 1}</td>
+                      <td className="px-5 py-4 text-slate-400 text-xs font-mono">{idx + 1}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div
@@ -460,8 +460,8 @@ export default function UserManagementTable() {
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">{user.fullName}</div>
-                            <div className="text-xs text-gray-400">{user.email}</div>
+                            <div className="font-semibold text-slate-900">{user.fullName}</div>
+                            <div className="text-xs text-slate-400">{user.email}</div>
                           </div>
                         </div>
                       </td>
@@ -476,7 +476,7 @@ export default function UserManagementTable() {
                           {user.status}
                         </span>
                       </td>
-                      <td className="px-4 py-4 hidden xl:table-cell text-gray-500 text-xs">
+                      <td className="px-4 py-4 hidden xl:table-cell text-slate-500 text-xs">
                         {formatDate(user.createdAt)}
                       </td>
                       <td className="px-5 py-4">
@@ -491,7 +491,7 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -500,7 +500,7 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => promptDelete(user.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -513,7 +513,7 @@ export default function UserManagementTable() {
                             <>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -528,7 +528,7 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => promptDelete(user.id)}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -541,7 +541,7 @@ export default function UserManagementTable() {
                             <>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
