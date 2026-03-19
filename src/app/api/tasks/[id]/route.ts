@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { TASK_SELECT, VALID_STATUSES, VALID_PRIORITIES, serializeTask } from "@/app/api/tasks/route";
+import { getRequestUser } from "@/lib/session";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -29,6 +30,9 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
 
+  const caller = getRequestUser(req);
+  if (!caller) return fail("Authentication required.", 401);
+
   let body: unknown;
   try {
     body = await req.json();
@@ -40,6 +44,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   if (Object.keys(data).length === 0) {
     return fail("Provide at least one field to update.");
+  }
+
+  // Non-admins cannot change assignees
+  if (caller.role !== "admin" && "assigneeIds" in data) {
+    return fail("Only admins can change task assignees.", 403);
   }
 
   const errors: Record<string, string[]> = {};
@@ -91,8 +100,17 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return fail("Validation failed.", 422, errors);
   }
 
-  const existing = await db.task.findUnique({ where: { id }, select: { id: true } });
+  const existing = await db.task.findUnique({
+    where: { id },
+    select: { id: true, assignees: { select: { userId: true } } },
+  });
   if (!existing) return fail("Task not found.", 404);
+
+  // Members can only edit tasks they are assigned to
+  if (caller.role !== "admin") {
+    const isAssigned = existing.assignees.some((a) => a.userId === caller.id);
+    if (!isAssigned) return fail("You can only edit tasks assigned to you.", 403);
+  }
 
   // Verify assignees exist
   if (ids && ids.length > 0) {

@@ -825,17 +825,19 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
               </button>
             )}
 
-            {/* Create task */}
-            <button
-              onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
-              className="flex items-center gap-1.5 h-8 px-3.5 text-white text-[13px] font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline">New Task</span>
-            </button>
+            {/* Create task — admin only */}
+            {currentUserRole === "admin" && (
+              <button
+                onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
+                className="flex items-center gap-1.5 h-8 px-3.5 text-white text-[13px] font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
+                style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden sm:inline">New Task</span>
+              </button>
+            )}
           </div>
         </div>
 

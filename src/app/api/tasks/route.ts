@@ -70,6 +70,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
+  if (caller.role !== "admin") return fail("Only admins can create tasks.", 403);
 
   let body: unknown;
   try {
