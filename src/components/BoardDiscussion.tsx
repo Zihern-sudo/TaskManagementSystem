@@ -208,7 +208,7 @@ function CommentItem({
 
   return (
     <>
-    <div className={`flex gap-3 ${isReply ? "pl-10" : ""}`}>
+    <div className={`flex gap-3 ${isReply ? "pl-5 sm:pl-10" : ""}`}>
       <div
         className={`w-8 h-8 rounded-full ${avatarColor(
           comment.author.fullName

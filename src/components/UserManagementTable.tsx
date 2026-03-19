@@ -323,7 +323,7 @@ export default function UserManagementTable() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
         <div>
           <h1 className="text-xl font-bold text-gray-900">User Management</h1>
           <p className="text-sm text-gray-500">{users.length} total users</p>
@@ -340,7 +340,7 @@ export default function UserManagementTable() {
       </div>
 
       {/* Stats bar */}
-      <div className="px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-6">
+      <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-6">
         <div className="flex items-center gap-1.5 text-sm">
           <div className="w-2 h-2 rounded-full bg-green-500" />
           <span className="font-semibold text-gray-800">{activeCount}</span>
@@ -359,7 +359,7 @@ export default function UserManagementTable() {
       </div>
 
       {/* Filters */}
-      <div className="px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-3 flex-wrap">
+      <div className="px-4 sm:px-6 py-3 bg-white border-b border-gray-100 flex items-center gap-3 flex-wrap">
         <div className="relative">
           <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -417,7 +417,8 @@ export default function UserManagementTable() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[480px]">
               <thead>
                 <tr className="border-b-2 border-gray-200 bg-gray-50">
                   <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
@@ -562,6 +563,7 @@ export default function UserManagementTable() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

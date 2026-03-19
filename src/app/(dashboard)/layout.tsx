@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { decodeSession, SESSION_COOKIE } from "@/lib/session";
-import Sidebar from "@/components/Sidebar";
+import DashboardShell from "@/components/DashboardShell";
 import { SessionUser } from "@/types";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -21,11 +21,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar user={user} />
-      <main className="flex-1 ml-64 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <DashboardShell user={user}>
+      {children}
+    </DashboardShell>
   );
 }
