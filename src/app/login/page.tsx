@@ -120,13 +120,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "linear-gradient(135deg, #0a2463 0%, #0747A6 40%, #1565C0 70%, #1976D2 100%)" }}>
+    <div className="min-h-screen flex" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4338ca 65%, #5b21b6 100%)" }}>
       {/* Decorative background circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #60a5fa, transparent)" }} />
-        <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #93c5fd, transparent)" }} />
-        <div className="absolute -bottom-20 left-1/4 w-80 h-80 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #3b82f6, transparent)" }} />
-        <div className="absolute top-20 right-1/3 w-40 h-40 rounded-full opacity-5" style={{ background: "radial-gradient(circle, #bfdbfe, transparent)" }} />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #818cf8, transparent)" }} />
+        <div className="absolute top-1/2 -left-20 w-72 h-72 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #a5b4fc, transparent)" }} />
+        <div className="absolute -bottom-20 left-1/4 w-80 h-80 rounded-full opacity-12" style={{ background: "radial-gradient(circle, #7c3aed, transparent)" }} />
+        <div className="absolute top-20 right-1/3 w-40 h-40 rounded-full opacity-8" style={{ background: "radial-gradient(circle, #c4b5fd, transparent)" }} />
+        <div className="absolute bottom-1/4 right-10 w-56 h-56 rounded-full opacity-8" style={{ background: "radial-gradient(circle, #6d28d9, transparent)" }} />
       </div>
 
       {/* Left branding panel */}
@@ -135,22 +136,22 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-              <svg className="w-7 h-7 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-7 h-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
             <div>
               <span className="text-2xl font-bold tracking-tight">RIO Task</span>
-              <p className="text-blue-300 text-xs font-medium tracking-widest uppercase mt-0.5">Project Management</p>
+              <p className="text-indigo-300 text-xs font-medium tracking-widest uppercase mt-0.5">Project Management</p>
             </div>
           </div>
 
           <h1 className="text-5xl font-bold leading-tight mb-5 tracking-tight">
             Manage your<br />
-            <span style={{ color: "#93c5fd" }}>team&apos;s work,</span><br />
+            <span style={{ color: "#a5b4fc" }}>team&apos;s work,</span><br />
             all in one place
           </h1>
-          <p className="text-blue-200 text-lg leading-relaxed mb-10 max-w-sm">
+          <p className="text-indigo-200 text-lg leading-relaxed mb-10 max-w-sm">
             Plan, track, and release great software with your team using our task management board.
           </p>
 
@@ -161,15 +162,15 @@ export default function LoginPage() {
               { icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", label: "Task Tracking", desc: "Stay on top of deadlines" },
               { icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z", label: "Team Management", desc: "Invite and manage members" },
             ].map((f) => (
-              <div key={f.label} className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(4px)" }}>
-                <div className="w-8 h-8 rounded-lg bg-blue-500 bg-opacity-40 flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div key={f.label} className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)", border: "1px solid rgba(165,180,252,0.15)" }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.35)" }}>
+                  <svg className="w-4 h-4 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} />
                   </svg>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-white">{f.label}</p>
-                  <p className="text-xs text-blue-300">{f.desc}</p>
+                  <p className="text-xs text-indigo-300">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -183,12 +184,12 @@ export default function LoginPage() {
           {/* Card */}
           <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] overflow-hidden">
             {/* Top accent bar */}
-            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #1d4ed8, #3b82f6, #60a5fa)" }} />
+            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)" }} />
 
             <div className="px-8 pt-8 pb-10">
               {/* Mobile logo */}
               <div className="lg:hidden flex items-center gap-2.5 mb-8">
-                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
@@ -209,7 +210,7 @@ export default function LoginPage() {
                     onClick={() => switchMode(m)}
                     className={`flex-1 flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-lg transition-all ${
                       mode === m
-                        ? "bg-white text-blue-600 shadow-sm font-semibold"
+                        ? "bg-white text-indigo-600 shadow-sm font-semibold"
                         : "text-slate-400 hover:text-slate-600"
                     }`}
                   >
@@ -261,7 +262,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => { setForgotOpen(!forgotOpen); setForgotSent(false); setForgotError(""); }}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
                       >
                         Forgot password?
                       </button>
@@ -286,36 +287,36 @@ export default function LoginPage() {
 
                   {/* Inline forgot-password panel */}
                   {forgotOpen && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-4">
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-4">
                       {forgotSent ? (
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2 text-blue-700">
+                          <div className="flex items-center gap-2 text-indigo-700">
                             <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                             <span className="text-sm font-semibold">Check your inbox</span>
                           </div>
-                          <p className="text-xs text-blue-600 leading-relaxed">
+                          <p className="text-xs text-indigo-600 leading-relaxed">
                             If <span className="font-medium">{forgotEmail}</span> is registered, a reset link has been sent. It expires in 1 hour.
                           </p>
                           <button
                             type="button"
                             onClick={closeForgot}
-                            className="self-start text-xs text-blue-700 hover:text-blue-800 font-medium hover:underline mt-1"
+                            className="self-start text-xs text-indigo-700 hover:text-indigo-800 font-medium hover:underline mt-1"
                           >
                             Back to sign in
                           </button>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          <p className="text-xs font-semibold text-blue-700">Reset your password</p>
-                          <p className="text-xs text-blue-600">Enter your email and we&apos;ll send you a reset link.</p>
+                          <p className="text-xs font-semibold text-indigo-700">Reset your password</p>
+                          <p className="text-xs text-indigo-600">Enter your email and we&apos;ll send you a reset link.</p>
                           <input
                             type="email"
                             value={forgotEmail}
                             onChange={(e) => setForgotEmail(e.target.value)}
                             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleForgotPassword(e as unknown as React.FormEvent); } }}
-                            className="w-full border border-blue-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition"
+                            className="w-full border border-indigo-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition"
                             placeholder="you@company.com"
                             autoFocus
                           />
@@ -327,7 +328,8 @@ export default function LoginPage() {
                               type="button"
                               onClick={handleForgotPassword}
                               disabled={forgotLoading || !forgotEmail}
-                              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded-lg transition-colors"
+                              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white rounded-lg transition-all disabled:opacity-50"
+                              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
                             >
                               {forgotLoading ? (
                                 <>
@@ -335,14 +337,14 @@ export default function LoginPage() {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                   </svg>
-                                  Sending...
+                                  Sending…
                                 </>
                               ) : "Send reset link"}
                             </button>
                             <button
                               type="button"
                               onClick={closeForgot}
-                              className="px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 rounded-lg hover:bg-blue-100 transition-colors"
+                              className="px-3 py-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-indigo-100 transition-colors"
                             >
                               Cancel
                             </button>
@@ -365,7 +367,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={loading}
                     className="w-full text-white font-semibold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-70"
-                    style={{ background: loading ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)" }}
+                    style={{ background: loading ? "#a5b4fc" : "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
                   >
                     {loading ? (
                       <>
@@ -392,8 +394,8 @@ export default function LoginPage() {
                 <>
                   {magicSent ? (
                     <div className="flex flex-col items-center py-6 gap-5 text-center">
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #dbeafe, #eff6ff)" }}>
-                        <svg className="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #e0e7ff, #eef2ff)" }}>
+                        <svg className="w-8 h-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
@@ -405,7 +407,7 @@ export default function LoginPage() {
                       </div>
                       <button
                         onClick={() => { setMagicSent(false); setMagicEmail(""); }}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium hover:underline"
                       >
                         Use a different email
                       </button>
@@ -446,7 +448,7 @@ export default function LoginPage() {
                         type="submit"
                         disabled={magicLoading}
                         className="w-full text-white font-semibold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-70"
-                        style={{ background: magicLoading ? "#93c5fd" : "linear-gradient(135deg, #1d4ed8, #2563eb)" }}
+                        style={{ background: magicLoading ? "#a5b4fc" : "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
                       >
                         {magicLoading ? (
                           <>
@@ -523,7 +525,7 @@ export default function LoginPage() {
           </div>
 
           {/* Bottom tagline */}
-          <p className="text-center text-blue-300 text-xs mt-6 opacity-70">
+          <p className="text-center text-indigo-300 text-xs mt-6 opacity-70 font-medium tracking-wide">
             Secure • Fast • Built for teams
           </p>
         </div>
