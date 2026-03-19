@@ -324,7 +324,8 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[480px]">
         <thead>
           <tr className="border-b-2 border-gray-200 bg-gray-50">
             <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
@@ -446,6 +447,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
           )}
         </tbody>
       </table>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -543,6 +545,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [filterAssignedToMe, setFilterAssignedToMe] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [exportTrigger, setExportTrigger] = useState(0);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -678,118 +681,150 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Project Kanban Board</h1>
-          <p className="text-sm text-gray-500">{tasks.length} tasks total</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="relative hidden sm:block">
-            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tasks..."
-              className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
-            />
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Project Kanban Board</h1>
+            <p className="text-xs sm:text-sm text-gray-500">{tasks.length} tasks total</p>
           </div>
 
-          {/* Priority filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "")}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hidden md:block"
-          >
-            <option value="">All Priorities</option>
-            {(["critical", "high", "medium", "low"] as TaskPriority[]).map((p) => (
-              <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile search toggle */}
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className={`sm:hidden p-2 rounded-lg transition-colors ${mobileSearchOpen ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:bg-gray-100"}`}
+              aria-label="Toggle search"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
 
-          {/* Assigned to me toggle */}
-          {(() => {
-            const myCount = tasks.filter((t) => t.assignees.some((a) => a.id === currentUser.id)).length;
-            return (
+            {/* Desktop search */}
+            <div className="relative hidden sm:block">
+              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+              />
+            </div>
+
+            {/* Priority filter */}
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "")}
+              className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hidden md:block"
+            >
+              <option value="">All Priorities</option>
+              {(["critical", "high", "medium", "low"] as TaskPriority[]).map((p) => (
+                <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+              ))}
+            </select>
+
+            {/* Assigned to me toggle */}
+            {(() => {
+              const myCount = tasks.filter((t) => t.assignees.some((a) => a.id === currentUser.id)).length;
+              return (
+                <button
+                  onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
+                  className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    filterAssignedToMe
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                  }`}
+                >
+                  <span className={`min-w-[20px] h-5 rounded-full flex items-center justify-center text-[11px] font-bold px-1 ${
+                    filterAssignedToMe ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                  }`}>
+                    {myCount}
+                  </span>
+                  My Tasks
+                </button>
+              );
+            })()}
+
+            {/* View toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
-                className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                  filterAssignedToMe
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                onClick={() => setView("kanban")}
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  view === "kanban" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
-                <span className={`min-w-[20px] h-5 rounded-full flex items-center justify-center text-[11px] font-bold px-1 ${
-                  filterAssignedToMe ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-                }`}>
-                  {myCount}
-                </span>
-                My Tasks
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                </svg>
+                <span className="hidden sm:inline">Board</span>
               </button>
-            );
-          })()}
+              <button
+                onClick={() => setView("list")}
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
 
-          {/* View toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            {/* Export to PDF — only in list view */}
+            {view === "list" && (
+              <button
+                onClick={() => setExportTrigger((n) => n + 1)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 transition-colors"
+              >
+                <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
+                Export PDF
+              </button>
+            )}
+
+            {/* Create task */}
             <button
-              onClick={() => setView("kanban")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                view === "kanban" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
+              onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Board
-            </button>
-            <button
-              onClick={() => setView("list")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              List
+              <span className="hidden sm:inline">Create</span>
             </button>
           </div>
-
-          {/* Export to PDF — only in list view */}
-          {view === "list" && (
-            <button
-              onClick={() => setExportTrigger((n) => n + 1)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 transition-colors"
-            >
-              <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              </svg>
-              Export PDF
-            </button>
-          )}
-
-          {/* Create task */}
-          <button
-            onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create
-          </button>
         </div>
+
+        {/* Mobile search bar — expands below the header row */}
+        {mobileSearchOpen && (
+          <div className="sm:hidden px-4 pb-3">
+            <div className="relative">
+              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                autoFocus
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Board content */}
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto">
         {view === "kanban" ? (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-4 gap-4 min-w-[900px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {COLUMNS.map((col) => (
                 <KanbanColumn
                   key={col.id}

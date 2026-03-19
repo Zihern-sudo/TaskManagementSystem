@@ -316,14 +316,14 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
           <p className="text-sm text-gray-500">Manage your personal information and security</p>
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="max-w-2xl mx-auto space-y-6">
 
           {/* Profile card */}
@@ -331,7 +331,7 @@ export default function ProfilePage() {
             {/* Gradient banner */}
             <div className="h-24 w-full" style={{ background: "linear-gradient(135deg, #0747A6 0%, #1565C0 60%, #1976D2 100%)" }} />
 
-            <div className="px-6 pb-6">
+            <div className="px-4 sm:px-6 pb-6">
               {/* Avatar + upload zone, overlapping banner */}
               <div className="flex items-end justify-between -mt-12 mb-4">
                 <div className="border-4 border-white rounded-2xl shadow-lg bg-white">
@@ -424,7 +424,7 @@ export default function ProfilePage() {
 
           {/* Task summary */}
           {taskSummary && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { label: "Assigned Tasks", value: taskSummary.total, color: "text-blue-600", bg: "bg-blue-50", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { label: "In Progress", value: taskSummary.inProgress, color: "text-indigo-600", bg: "bg-indigo-50", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
@@ -486,7 +486,7 @@ export default function ProfilePage() {
                     placeholder="••••••••"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
                     <input

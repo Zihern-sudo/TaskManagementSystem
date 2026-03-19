@@ -8,6 +8,8 @@ import { SessionUser } from "@/types";
 
 interface SidebarProps {
   user: SessionUser;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 function getInitials(name: string) {
@@ -38,7 +40,7 @@ const adminNavItems = [
   },
 ];
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -57,7 +59,10 @@ export default function Sidebar({ user }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 flex flex-col z-30" style={{ backgroundColor: "#0747A6" }}>
+    <aside
+      className={`fixed inset-y-0 left-0 w-64 flex flex-col z-30 transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+      style={{ backgroundColor: "#0747A6" }}
+    >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-blue-700">
         <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
@@ -82,6 +87,7 @@ export default function Sidebar({ user }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 active
                   ? "bg-white/20 text-white"
@@ -105,6 +111,7 @@ export default function Sidebar({ user }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={onClose}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     active
                       ? "bg-white/20 text-white"
@@ -124,6 +131,7 @@ export default function Sidebar({ user }: SidebarProps) {
       <div className="border-t border-blue-700 p-4 space-y-2">
         <Link
           href="/profile"
+          onClick={onClose}
           className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-colors group ${
             pathname === "/profile" ? "bg-white/20 text-white" : "hover:bg-white/10"
           }`}
