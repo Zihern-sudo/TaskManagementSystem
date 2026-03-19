@@ -123,7 +123,7 @@ function AvatarUpload({
     <div className="flex flex-col items-center gap-3">
       {/* Drop zone */}
       <div
-        className={`relative w-24 h-24 rounded-2xl cursor-pointer transition-all group border-2 border-dashed
+        className={`relative w-24 h-24 rounded-xl cursor-pointer transition-all group border-2 border-dashed
           ${dragOver ? "border-blue-500 bg-blue-50 scale-105" : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -136,11 +136,11 @@ function AvatarUpload({
               src={currentAvatar}
               alt="Avatar"
               fill
-              className="rounded-2xl object-cover"
+              className="rounded-xl object-cover"
               unoptimized
             />
             {/* Overlay on hover */}
-            <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -148,7 +148,7 @@ function AvatarUpload({
             </div>
           </>
         ) : (
-          <div className="w-full h-full rounded-2xl bg-indigo-500 flex flex-col items-center justify-center text-white gap-1">
+          <div className="w-full h-full rounded-xl bg-indigo-500 flex flex-col items-center justify-center text-white gap-1">
             <span className="text-2xl font-bold leading-none">{getInitials(profile.fullName)}</span>
             <svg className="w-4 h-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -316,10 +316,10 @@ export default function ProfilePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-slate-200 sticky top-0 z-10">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-sm text-gray-500">Manage your personal information and security</p>
+          <h1 className="text-base font-semibold text-slate-900">My Profile</h1>
+          <p className="text-[13px] text-slate-500">Manage your personal information and security</p>
         </div>
       </div>
 
@@ -327,14 +327,14 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto space-y-6">
 
           {/* Profile card */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Gradient banner */}
-            <div className="h-24 w-full" style={{ background: "linear-gradient(135deg, #0747A6 0%, #1565C0 60%, #1976D2 100%)" }} />
+            <div className="h-16 w-full" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 60%, #334155 100%)" }} />
 
             <div className="px-4 sm:px-6 pb-6">
               {/* Avatar + upload zone, overlapping banner */}
               <div className="flex items-end justify-between -mt-12 mb-4">
-                <div className="border-4 border-white rounded-2xl shadow-lg bg-white">
+                <div className="border-4 border-white rounded-xl shadow-lg bg-white">
                   <AvatarUpload
                     profile={profile}
                     onUploaded={(url) => setProfile((prev) => prev ? { ...prev, avatarUrl: url } : prev)}
@@ -357,13 +357,13 @@ export default function ProfilePage() {
               {!editName ? (
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">{profile.fullName}</h2>
-                    <p className="text-gray-400 text-sm">{profile.email}</p>
-                    <p className="text-gray-400 text-xs mt-1">Member since {formatDate(profile.createdAt)}</p>
+                    <h2 className="text-lg font-semibold text-slate-900">{profile.fullName}</h2>
+                    <p className="text-slate-400 text-[13px]">{profile.email}</p>
+                    <p className="text-slate-400 text-[11px] mt-1">Member since {formatDate(profile.createdAt)}</p>
                   </div>
                   <button
                     onClick={() => { setEditName(true); setFullName(profile.fullName); setNameError(""); }}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200 hover:border-blue-300"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors border border-slate-200 hover:border-blue-300"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -374,12 +374,12 @@ export default function ProfilePage() {
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   {nameError && (
@@ -403,7 +403,7 @@ export default function ProfilePage() {
                     </button>
                     <button
                       onClick={() => { setEditName(false); setNameError(""); }}
-                      className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                      className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg transition"
                     >
                       Cancel
                     </button>
@@ -430,31 +430,26 @@ export default function ProfilePage() {
                 { label: "In Progress", value: taskSummary.inProgress, color: "text-indigo-600", bg: "bg-indigo-50", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
                 { label: "Overdue", value: taskSummary.overdue, color: "text-red-600", bg: "bg-red-50", icon: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
               ].map((stat) => (
-                <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-                  <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3`}>
-                    <svg className={`w-5 h-5 ${stat.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
-                    </svg>
-                  </div>
-                  <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{stat.label}</div>
+                <div key={stat.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                  <div className={`text-3xl font-bold ${stat.color} leading-none mb-1`}>{stat.value}</div>
+                  <div className="text-[11px] text-slate-500 font-medium">{stat.label}</div>
                 </div>
               ))}
             </div>
           )}
 
           {/* Security section */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">Password & Security</h3>
-                  <p className="text-xs text-gray-400">Update your account password</p>
+                  <h3 className="text-sm font-semibold text-slate-900">Password & Security</h3>
+                  <p className="text-[11px] text-slate-400">Update your account password</p>
                 </div>
               </div>
               <button
@@ -477,33 +472,33 @@ export default function ProfilePage() {
             {showPwForm && (
               <div className="px-6 py-5 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Current Password</label>
                   <input
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="••••••••"
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
                     <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Min. 8 characters"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Repeat new password"
                     />
                   </div>
@@ -531,17 +526,17 @@ export default function ProfilePage() {
 
             {!showPwForm && !pwSuccess && (
               <div className="px-6 py-4">
-                <p className="text-sm text-gray-400">Your password was last set when your account was created.</p>
+                <p className="text-sm text-slate-400">Your password was last set when your account was created.</p>
               </div>
             )}
           </div>
 
           {/* Account info */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h3 className="text-sm font-bold text-gray-900">Account Information</h3>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Account Information</h3>
             </div>
-            <div className="px-6 py-4 divide-y divide-gray-100">
+            <div className="px-6 py-4 divide-y divide-slate-100">
               {[
                 { label: "Email Address", value: profile.email },
                 { label: "Role", value: profile.role.charAt(0).toUpperCase() + profile.role.slice(1) },
@@ -550,8 +545,8 @@ export default function ProfilePage() {
                 { label: "User ID", value: profile.id },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-3">
-                  <span className="text-sm text-gray-500">{item.label}</span>
-                  <span className="text-sm font-medium text-gray-900 font-mono text-right max-w-[60%] truncate">{item.value}</span>
+                  <span className="text-sm text-slate-500">{item.label}</span>
+                  <span className="text-sm font-medium text-slate-900 font-mono text-right max-w-[60%] truncate">{item.value}</span>
                 </div>
               ))}
             </div>

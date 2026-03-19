@@ -62,6 +62,13 @@ type SortDir = "asc" | "desc" | "none";
 const PRIORITY_ORDER: Record<TaskPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const STATUS_ORDER: Record<TaskStatus, number> = { not_started: 0, in_progress: 1, in_review: 2, completed: 3 };
 
+const PRIORITY_BORDER: Record<TaskPriority, string> = {
+  critical: "border-l-red-500",
+  high: "border-l-orange-500",
+  medium: "border-l-blue-500",
+  low: "border-l-slate-300",
+};
+
 function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
   if (dir === "none") return tasks;
   return [...tasks].sort((a, b) => {
@@ -94,21 +101,19 @@ function sortTasks(tasks: Task[], field: SortField, dir: SortDir): Task[] {
 
 // ── Sort Header Cell ────────────────────────────────────────────────────────
 
-function SortTh({
-  field, label, sortField, sortDir, onSort, className,
-}: {
+function SortTh({ field, label, sortField, sortDir, onSort, className }: {
   field: SortField; label: string; sortField: SortField; sortDir: SortDir;
   onSort: (f: SortField) => void; className?: string;
 }) {
   const active = sortField === field && sortDir !== "none";
   return (
     <th
-      className={`text-left px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none hover:bg-gray-100 transition-colors group ${className ?? ""}`}
+      className={`text-left px-4 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-50 transition-colors group ${className ?? ""}`}
       onClick={() => onSort(field)}
     >
       <div className="flex items-center gap-1">
         {label}
-        <span className={`text-xs transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
+        <span className={`text-[10px] transition-opacity ${active ? "opacity-100 text-blue-600" : "opacity-0 group-hover:opacity-40"}`}>
           {sortDir === "asc" && sortField === field ? "↑" : sortDir === "desc" && sortField === field ? "↓" : "↕"}
         </span>
       </div>
@@ -126,10 +131,7 @@ interface TaskCardProps {
 
 function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: task.id });
-
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
   return (
     <div
@@ -138,30 +140,24 @@ function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`bg-white rounded-lg border border-gray-200 p-3.5 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group select-none ${
-        isDragging ? "opacity-50" : ""
+      className={`bg-white rounded-lg border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[task.priority]} p-3 cursor-pointer transition-all duration-150 group select-none ${
+        isDragging ? "opacity-40" : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:-translate-y-px hover:border-slate-300"
       }`}
     >
-      <div className="flex items-start gap-2 mb-2.5">
-        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-        <p className="text-sm font-medium text-gray-900 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
-          {task.title}
-        </p>
-      </div>
+      <p className="text-[13px] font-medium text-slate-800 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
+        {task.title}
+      </p>
 
       {task.description && (
-        <p className="text-xs text-gray-400 mb-2.5 line-clamp-1 pl-4">{task.description}</p>
+        <p className="text-[11px] text-slate-400 mb-2.5 line-clamp-1 leading-relaxed">{task.description}</p>
       )}
 
-      <div className="flex items-center justify-between gap-2 pl-4">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRIORITY_COLORS[task.priority]}`}>
-            {PRIORITY_LABELS[task.priority]}
-          </span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
           {task.dueDate && (() => {
             const { formatted, overdue } = formatDueDate(task.dueDate!);
             return (
-              <span className={`text-xs flex items-center gap-1 ${overdue ? "text-red-500" : "text-gray-400"}`}>
+              <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : "text-slate-400"}`}>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -190,20 +186,20 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
 
   return (
     <div className="flex flex-col min-w-0">
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-3 h-3 rounded-full ${column.headerColor}`} />
-        <span className="text-sm font-semibold text-gray-700">{column.label}</span>
-        <span className="ml-auto text-xs bg-gray-200 text-gray-600 rounded-full px-2 py-0.5 font-medium">
+      <div className="flex items-center gap-2 mb-3 px-0.5">
+        <div className={`w-2 h-2 rounded-full ${column.headerColor}`} />
+        <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">{column.label}</span>
+        <span className="ml-auto text-[11px] bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5 font-medium tabular-nums min-w-[20px] text-center">
           {tasks.length}
         </span>
       </div>
 
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[200px] rounded-xl border-2 border-dashed p-2 space-y-2 transition-colors ${
+        className={`flex-1 min-h-[200px] rounded-xl p-2 space-y-2 transition-all duration-150 ${
           isOver
-            ? "border-blue-400 bg-blue-50"
-            : `${column.bg} ${column.border}`
+            ? "bg-blue-50 ring-2 ring-blue-200 ring-inset"
+            : "bg-slate-50/60"
         }`}
       >
         {tasks.map((task) => (
@@ -215,8 +211,8 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
           />
         ))}
         {tasks.length === 0 && (
-          <div className="flex items-center justify-center h-full min-h-[100px] text-xs text-gray-400">
-            Drop tasks here
+          <div className="flex items-center justify-center h-full min-h-[80px] text-[11px] text-slate-400">
+            No tasks
           </div>
         )}
       </div>
@@ -324,11 +320,11 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[480px]">
         <thead>
-          <tr className="border-b-2 border-gray-200 bg-gray-50">
+          <tr className="border-b border-slate-200 bg-slate-50">
             <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
             <SortTh field="title" label="Title" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
             <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
@@ -357,7 +353,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
               return (
               <tr
                 key={task.id}
-                className={`border-b border-gray-100 hover:bg-blue-50/50 transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""}`}
+                className={`border-b border-gray-100 hover:bg-slate-50 transition-colors ${idx % 2 === 1 ? "bg-slate-50/30" : ""}`}
               >
                 <td className="px-4 py-3 text-gray-400 text-xs font-mono">{rowNum}</td>
                 <td className="px-4 py-3">
@@ -452,7 +448,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-slate-50 rounded-b-xl">
           <span className="text-xs text-gray-500">
             Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sorted.length)} of {sorted.length} tasks
           </span>
@@ -460,7 +456,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
+              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
             >
               ← Prev
             </button>
@@ -481,7 +477,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                     className={`w-7 h-7 text-xs rounded-lg font-medium transition-colors ${
                       item === currentPage
                         ? "bg-blue-600 text-white shadow-sm"
-                        : "border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"
+                        : "border border-gray-200 bg-white hover:bg-slate-50 text-gray-600"
                     }`}
                   >
                     {item}
@@ -491,7 +487,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
+              className="px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed font-medium text-gray-600 transition-colors"
             >
               Next →
             </button>
@@ -507,7 +503,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
 function DeleteConfirm({ task, onConfirm, onCancel }: { task: Task; onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+      <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] w-full max-w-sm p-6 border border-slate-200">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -690,18 +686,20 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">Project Kanban Board</h1>
-            <p className="text-xs sm:text-sm text-gray-500">{tasks.length} tasks total</p>
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
+        <div className="flex items-center justify-between px-4 sm:px-6 h-12">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-sm font-semibold text-slate-900">Task Board</h1>
+            <span className="text-[11px] bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-medium tabular-nums">
+              {tasks.length}
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             {/* Mobile search toggle */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className={`sm:hidden p-2 rounded-lg transition-colors ${mobileSearchOpen ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:bg-gray-100"}`}
+              className={`sm:hidden p-1.5 rounded-md transition-colors ${mobileSearchOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-100"}`}
               aria-label="Toggle search"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -711,7 +709,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
 
             {/* Desktop search */}
             <div className="relative hidden sm:block">
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -719,7 +717,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks..."
-                className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+                className="pl-8 pr-3 h-8 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-44 placeholder-slate-400"
               />
             </div>
 
@@ -727,7 +725,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "")}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hidden md:block"
+              className="h-8 text-[13px] border border-slate-200 rounded-md px-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700 hidden md:block"
             >
               <option value="">All Priorities</option>
               {(["critical", "high", "medium", "low"] as TaskPriority[]).map((p) => (
@@ -741,13 +739,13 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
               return (
                 <button
                   onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
-                  className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  className={`hidden md:flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-medium border transition-colors ${
                     filterAssignedToMe
                       ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
-                  <span className={`min-w-[20px] h-5 rounded-full flex items-center justify-center text-[11px] font-bold px-1 ${
+                  <span className={`min-w-[18px] h-4 rounded-full flex items-center justify-center text-[10px] font-bold px-1 ${
                     filterAssignedToMe ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
                   }`}>
                     {myCount}
@@ -758,62 +756,62 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             })()}
 
             {/* View toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center bg-slate-100 rounded-md p-0.5">
               <button
                 onClick={() => setView("kanban")}
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  view === "kanban" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                className={`flex items-center gap-1 px-2.5 h-7 rounded text-[13px] font-medium transition-colors ${
+                  view === "kanban" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                 </svg>
                 <span className="hidden sm:inline">Board</span>
               </button>
               <button
                 onClick={() => setView("list")}
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                className={`flex items-center gap-1 px-2.5 h-7 rounded text-[13px] font-medium transition-colors ${
+                  view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
                 <span className="hidden sm:inline">List</span>
               </button>
             </div>
 
-            {/* Export to PDF — only in list view */}
+            {/* Export PDF — list view only */}
             {view === "list" && (
               <button
                 onClick={() => setExportTrigger((n) => n + 1)}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 transition-colors"
+                className="hidden sm:flex items-center gap-1.5 h-8 px-3 bg-white hover:bg-slate-50 text-slate-600 text-[13px] font-medium rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
               >
-                <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                 </svg>
-                Export PDF
+                Export
               </button>
             )}
 
             {/* Create task */}
             <button
               onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              className="flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-md transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="hidden sm:inline">Create</span>
+              <span className="hidden sm:inline">New Task</span>
             </button>
           </div>
         </div>
 
-        {/* Mobile search bar — expands below the header row */}
+        {/* Mobile search bar */}
         {mobileSearchOpen && (
           <div className="sm:hidden px-4 pb-3">
             <div className="relative">
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -822,7 +820,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks..."
                 autoFocus
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-4 py-2 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -830,7 +828,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
       </div>
 
       {/* Board content */}
-      <div className="flex-1 p-4 sm:p-6 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto bg-white">
         {view === "kanban" ? (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -846,11 +844,8 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             </div>
             <DragOverlay>
               {activeTask && (
-                <div className="bg-white rounded-lg border border-blue-300 shadow-2xl p-3.5 w-64 opacity-95 rotate-2">
-                  <div className="flex items-start gap-2">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${PRIORITY_DOT[activeTask.priority]}`} />
-                    <p className="text-sm font-medium text-gray-900 line-clamp-2">{activeTask.title}</p>
-                  </div>
+                <div className={`bg-white rounded-lg border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[activeTask.priority]} shadow-[0_12px_32px_rgba(0,0,0,0.15)] p-3 w-60 rotate-2 opacity-95`}>
+                  <p className="text-[13px] font-medium text-slate-800 line-clamp-2">{activeTask.title}</p>
                 </div>
               )}
             </DragOverlay>

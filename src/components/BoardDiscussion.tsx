@@ -99,7 +99,7 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
           className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
             r.reacted
               ? "bg-blue-100 border-blue-300 text-blue-700 font-medium"
-              : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+              : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
           }`}
         >
           {r.emoji} <span>{r.count}</span>
@@ -110,7 +110,7 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
         <button
           onClick={() => setPicking(!picking)}
           disabled={!!inFlight}
-          className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border border-dashed border-slate-300 text-slate-400 hover:border-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg
             className="w-3 h-3"
@@ -127,7 +127,7 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
           </svg>
         </button>
         {picking && (
-          <div className="absolute bottom-full mb-1 left-0 bg-white rounded-xl border border-gray-200 shadow-lg p-2 flex gap-1 z-10">
+          <div className="absolute bottom-full mb-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg p-2 flex gap-1 z-10">
             {EMOJIS.map((e) => (
               <button
                 key={e}
@@ -229,19 +229,19 @@ function CommentItem({
       </div>
       <div className="flex-1 min-w-0">
         <div
-          className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${
+          className={`bg-white rounded-xl border px-4 py-3 shadow-sm ${
             comment.pinned
               ? "border-amber-200 bg-amber-50/30"
-              : "border-gray-100"
+              : "border-slate-100"
           }`}
         >
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="text-sm font-semibold text-slate-900">
                 {comment.author.fullName}
               </span>
               {isReply && (
-                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
+                <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
                   reply
                 </span>
               )}
@@ -258,7 +258,7 @@ function CommentItem({
                 </span>
               )}
             </div>
-            <span className="text-xs text-gray-400 shrink-0">
+            <span className="text-xs text-slate-400 shrink-0">
               {timeAgo(comment.createdAt)}
             </span>
           </div>
@@ -269,7 +269,7 @@ function CommentItem({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={2}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50"
               />
               <div className="flex gap-2 mt-2">
                 <button
@@ -284,14 +284,14 @@ function CommentItem({
                     setEditing(false);
                     setEditContent(comment.content);
                   }}
-                  className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
+                  className="px-3 py-1 text-slate-500 text-xs rounded-lg hover:bg-slate-100"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <p className="text-sm text-slate-700 leading-relaxed">
               {renderMentions(comment.content, activeUsers)}
             </p>
           )}
@@ -312,7 +312,7 @@ function CommentItem({
             {!isReply && (
               <button
                 onClick={() => setReplying(!replying)}
-                className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
               >
                 <svg
                   className="w-3 h-3"
@@ -339,7 +339,7 @@ function CommentItem({
                 className={`text-xs font-medium transition-colors flex items-center gap-1 ${
                   comment.pinned
                     ? "text-amber-600 hover:text-amber-700"
-                    : "text-gray-400 hover:text-amber-600"
+                    : "text-slate-400 hover:text-amber-600"
                 }`}
               >
                 <svg
@@ -356,13 +356,13 @@ function CommentItem({
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors"
+                  className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
+                  className="text-xs text-slate-400 hover:text-red-600 font-medium transition-colors"
                 >
                   Delete
                 </button>
@@ -402,7 +402,7 @@ function CommentItem({
                   setReplying(false);
                   setReplyContent("");
                 }}
-                className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100"
+                className="px-3 py-1.5 text-slate-500 text-xs rounded-lg hover:bg-slate-100"
               >
                 Cancel
               </button>
@@ -574,13 +574,13 @@ function TaskActivityItem({
         </div>
         <div className="flex-1 min-w-0">
           <div
-            className={`bg-white rounded-2xl border px-4 py-3 shadow-sm ${
-              tc.pinned ? "border-amber-200 bg-amber-50/30" : "border-gray-100"
+            className={`bg-white rounded-xl border px-4 py-3 shadow-sm ${
+              tc.pinned ? "border-amber-200 bg-amber-50/30" : "border-slate-100"
             }`}
           >
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="text-sm font-semibold text-gray-900 shrink-0">
+                <span className="text-sm font-semibold text-slate-900 shrink-0">
                   {tc.author.fullName}
                 </span>
                 <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
@@ -608,7 +608,7 @@ function TaskActivityItem({
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-400 shrink-0">
+              <span className="text-xs text-slate-400 shrink-0">
                 {timeAgo(tc.createdAt)}
               </span>
             </div>
@@ -619,7 +619,7 @@ function TaskActivityItem({
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   rows={2}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
@@ -631,14 +631,14 @@ function TaskActivityItem({
                   </button>
                   <button
                     onClick={() => { setEditing(false); setEditContent(tc.content); }}
-                    className="px-3 py-1 text-gray-600 text-xs rounded-lg hover:bg-gray-100"
+                    className="px-3 py-1 text-slate-500 text-xs rounded-lg hover:bg-slate-100"
                   >
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                 {tc.content}
               </p>
             )}
@@ -650,7 +650,7 @@ function TaskActivityItem({
               {/* Reply — available to everyone */}
               <button
                 onClick={handleReplyButtonClick}
-                className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -664,7 +664,7 @@ function TaskActivityItem({
                 className={`text-xs font-medium transition-colors flex items-center gap-1 ${
                   tc.pinned
                     ? "text-amber-600 hover:text-amber-700"
-                    : "text-gray-400 hover:text-amber-600"
+                    : "text-slate-400 hover:text-amber-600"
                 }`}
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
@@ -678,13 +678,13 @@ function TaskActivityItem({
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="text-xs text-gray-400 hover:text-blue-600 font-medium transition-colors"
+                    className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
+                    className="text-xs text-slate-400 hover:text-red-600 font-medium transition-colors"
                   >
                     Delete
                   </button>
@@ -695,7 +695,7 @@ function TaskActivityItem({
 
           {/* Existing replies */}
           {showReplies && replies.length > 0 && (
-            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-100">
+            <div className="mt-3 space-y-2 pl-4 border-l-2 border-slate-200">
               {replies.map((reply) => (
                 <div key={reply.id} className="flex gap-2">
                   <div
@@ -714,16 +714,16 @@ function TaskActivityItem({
                       getInitials(reply.author.fullName)
                     )}
                   </div>
-                  <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 px-3 py-2 shadow-sm">
+                  <div className="flex-1 min-w-0 bg-white rounded-lg border border-slate-100 px-3 py-2 shadow-sm">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-semibold text-gray-900">
+                      <span className="text-xs font-semibold text-slate-900">
                         {reply.author.fullName}
                       </span>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-slate-400 shrink-0">
                         {timeAgo(reply.createdAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
                       {reply.content}
                     </p>
                   </div>
@@ -748,7 +748,7 @@ function TaskActivityItem({
                 activeUsers={activeUsers}
                 rows={2}
                 placeholder="Reply... (Enter to post)"
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50 focus:bg-white"
               />
               <div className="flex flex-col gap-1">
                 <button
@@ -760,7 +760,7 @@ function TaskActivityItem({
                 </button>
                 <button
                   onClick={() => { setReplying(false); setReplyContent(""); }}
-                  className="px-3 py-1.5 text-gray-500 text-xs rounded-lg hover:bg-gray-100"
+                  className="px-3 py-1.5 text-slate-500 text-xs rounded-lg hover:bg-slate-100"
                 >
                   Cancel
                 </button>
@@ -1030,7 +1030,7 @@ export default function BoardDiscussion({
           className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-100 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
               <svg
                 className="w-4 h-4 text-blue-600"
                 fill="none"
@@ -1046,7 +1046,7 @@ export default function BoardDiscussion({
               </svg>
             </div>
             <div className="text-left">
-              <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 Board Discussion
                 {totalCount > 0 && (
                   <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 font-medium">
@@ -1054,13 +1054,13 @@ export default function BoardDiscussion({
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Project-wide team discussion
               </p>
             </div>
           </div>
           <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${
+            className={`w-5 h-5 text-slate-400 transition-transform ${
               collapsed ? "" : "rotate-180"
             }`}
             fill="none"
@@ -1088,7 +1088,7 @@ export default function BoardDiscussion({
                 className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
                   tab === "discussion"
                     ? "border-blue-600 text-blue-600 bg-white"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
                 Discussion
@@ -1097,7 +1097,7 @@ export default function BoardDiscussion({
                     className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
                       tab === "discussion"
                         ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-500"
+                        : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {totalCount}
@@ -1112,7 +1112,7 @@ export default function BoardDiscussion({
                 className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
                   tab === "activity"
                     ? "border-blue-600 text-blue-600 bg-white"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
                 Task Activity
@@ -1121,7 +1121,7 @@ export default function BoardDiscussion({
                     className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
                       tab === "activity"
                         ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-500"
+                        : "bg-slate-100 text-slate-500"
                     }`}
                   >
                     {taskComments.length}
@@ -1167,12 +1167,12 @@ export default function BoardDiscussion({
                         activeUsers={activeUsers}
                         rows={2}
                         placeholder="Share an update or ask a question... (@ to mention, Enter to post)"
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white transition"
+                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white transition"
                       />
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-slate-400">
                           Type{" "}
-                          <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">
+                          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[10px] font-mono">
                             @
                           </kbd>{" "}
                           to mention · Shift+Enter for new line
@@ -1232,7 +1232,7 @@ export default function BoardDiscussion({
                 {/* Comments list */}
                 <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto bg-slate-50/80">
                   {loading ? (
-                    <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
+                    <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
                       <svg
                         className="w-4 h-4 animate-spin text-blue-500"
                         fill="none"
@@ -1255,9 +1255,9 @@ export default function BoardDiscussion({
                       Loading discussion...
                     </div>
                   ) : comments.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 gap-3 text-gray-400">
+                    <div className="flex flex-col items-center py-10 gap-3 text-slate-400">
                       <svg
-                        className="w-10 h-10 text-gray-300"
+                        className="w-10 h-10 text-slate-300"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

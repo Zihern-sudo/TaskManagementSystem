@@ -32,7 +32,7 @@ export default function AvatarGroup({ users, max = 3, size = "sm" }: AvatarGroup
         <div
           key={user.id}
           title={user.fullName}
-          className={`${dim} rounded-full shrink-0 ring-2 ring-white overflow-hidden flex items-center justify-center font-bold text-white ${
+          className={`${dim} rounded-full shrink-0 ring-2 ring-slate-50 overflow-hidden flex items-center justify-center font-bold text-white ${
             user.avatarUrl ? "" : AVATAR_COLORS[i % AVATAR_COLORS.length]
           }`}
           style={{ marginLeft: i === 0 ? 0 : "-6px", zIndex: visible.length - i }}
@@ -54,7 +54,7 @@ export default function AvatarGroup({ users, max = 3, size = "sm" }: AvatarGroup
       {overflow > 0 && (
         <div
           title={users.slice(max).map((u) => u.fullName).join(", ")}
-          className={`${dim} rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-bold shrink-0 ring-2 ring-white`}
+          className={`${dim} rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold shrink-0 ring-2 ring-slate-50`}
           style={{ marginLeft: "-6px" }}
         >
           +{overflow}
