@@ -165,7 +165,7 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
 function MetaField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
         {label}
       </label>
       {children}
@@ -243,20 +243,25 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   if (isNew) {
     return (
       <>
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-          <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] w-full max-w-lg flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+          <div className="bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.2)] w-full max-w-lg flex flex-col overflow-hidden animate-scale-in">
+            {/* Gradient accent bar */}
+            <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899)" }} />
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+                  <svg className="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <h2 className="text-base font-bold text-slate-900">Create Task</h2>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 leading-tight">Create Task</h2>
+                  <p className="text-[11px] text-slate-400 font-medium">Add a new task to your board</p>
+                </div>
               </div>
-              <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -265,65 +270,69 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
             {/* Form */}
             <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Title <span className="text-red-500">*</span></label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   autoFocus
-                  className="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
                   placeholder="What needs to be done?"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Add a description..."
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                  placeholder="Add a description…"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>
+                  <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
                     {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Priority</label>
-                  <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Priority</label>
+                  <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
                     {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Due Date</label>
-                <input type="date" value={dueDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDueDate(e.target.value)} className="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Due Date</label>
+                <input type="date" value={dueDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDueDate(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all" />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assignees <span className="text-slate-400 font-normal">(up to 5)</span></label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assignees <span className="text-slate-400 font-normal normal-case">(up to 5)</span></label>
                 <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
               </div>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>
+                <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                  <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                  {error}
+                </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
-              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+              <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">Cancel</button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-bold text-white rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] disabled:opacity-50 flex items-center gap-2"
+                style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
               >
                 {saving ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                    Creating...
+                    Creating…
                   </>
                 ) : "Create Task"}
               </button>
@@ -337,17 +346,27 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   // ── Edit mode: JIRA-style two-column layout ──────────────────────────────
   const canDelete = currentUserRole === "admin";
 
+  const PRIORITY_GRADIENT: Record<string, string> = {
+    critical: "linear-gradient(90deg, #ef4444, #f97316)",
+    high: "linear-gradient(90deg, #f97316, #eab308)",
+    medium: "linear-gradient(90deg, #4f46e5, #7c3aed)",
+    low: "linear-gradient(90deg, #64748b, #94a3b8)",
+  };
+
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-        <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] w-full max-w-5xl max-h-[95vh] md:max-h-[92vh] flex flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.2)] w-full max-w-5xl max-h-[95vh] md:max-h-[92vh] flex flex-col overflow-hidden animate-scale-in">
+
+          {/* Priority-colored gradient accent bar */}
+          <div className="h-1.5 w-full shrink-0" style={{ background: PRIORITY_GRADIENT[priority] }} />
 
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 bg-slate-50/60 rounded-t-xl">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[priority]}`} />
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Task</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[status]}`}>
+          <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 bg-slate-50/70 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[priority]} ring-2 ring-white shadow-sm`} />
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Task</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${STATUS_COLORS[status]}`}>
                 {STATUS_LABELS[status]}
               </span>
             </div>
@@ -355,7 +374,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
               {canDelete && (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -363,8 +382,8 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   Delete
                 </button>
               )}
-              <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -375,42 +394,42 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
 
             {/* Left panel — title, description, comments */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-5 sm:py-6 space-y-5 border-b md:border-b-0 md:border-r border-slate-100">
+            <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-5 border-b md:border-b-0 md:border-r border-slate-100">
               {/* Title */}
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xl font-semibold text-slate-900 border-none focus:outline-none focus:ring-0 placeholder-gray-300 bg-transparent leading-tight"
+                className="w-full text-xl font-bold text-slate-900 border-none focus:outline-none focus:ring-0 placeholder-slate-300 bg-transparent leading-tight"
                 placeholder="Task title"
               />
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  className="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y bg-slate-50 focus:bg-white transition-colors"
-                  placeholder="Add a description..."
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-y bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                  placeholder="Add a description…"
                 />
               </div>
 
               {/* Activity / Comments */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Activity</label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">Activity</label>
                 <CommentSection taskId={task!.id} currentUserId={currentUserId} currentUserRole={currentUserRole} />
               </div>
             </div>
 
             {/* Right panel — metadata */}
-            <div className="w-full md:w-64 xl:w-72 md:shrink-0 overflow-y-auto px-4 sm:px-5 py-4 sm:py-6 bg-slate-50/60 space-y-5">
+            <div className="w-full md:w-68 xl:w-72 md:shrink-0 overflow-y-auto px-5 py-5 bg-slate-50/80 space-y-4">
               <MetaField label="Status">
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-300 transition-colors"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
                 >
                   {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                 </select>
@@ -421,11 +440,11 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                    className="w-full border border-slate-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-300 transition-colors appearance-none"
+                    className="w-full border border-slate-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors appearance-none"
                   >
                     {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
                   </select>
-                  <span className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none ${PRIORITY_DOT[priority]}`} />
+                  <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full pointer-events-none ${PRIORITY_DOT[priority]}`} />
                 </div>
               </MetaField>
 
@@ -435,17 +454,17 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   value={dueDate}
                   min={new Date().toISOString().slice(0, 10)}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white hover:border-slate-300 transition-colors"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
                 />
               </MetaField>
 
-              <MetaField label={`Assignees (up to 5)`}>
+              <MetaField label="Assignees (up to 5)">
                 <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
               </MetaField>
 
               {/* Priority badge preview */}
               <div className="pt-1">
-                <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${PRIORITY_COLORS[priority]}`}>
+                <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-bold ${PRIORITY_COLORS[priority]}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[priority]}`} />
                   {PRIORITY_LABELS[priority]} Priority
                 </span>
@@ -453,14 +472,14 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
 
               {/* Timestamps */}
               {task && (
-                <div className="pt-4 border-t border-slate-200 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span className="font-medium text-slate-500">Created</span>
-                    <span>{new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                <div className="pt-4 border-t border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Created</span>
+                    <span className="text-xs text-slate-500 font-medium">{new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span className="font-medium text-slate-500">Updated</span>
-                    <span>{new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Updated</span>
+                    <span className="text-xs text-slate-500 font-medium">{new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   </div>
                 </div>
               )}
@@ -468,28 +487,29 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-200 bg-slate-50/60 rounded-b-xl">
+          <div className="flex items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-slate-50/80 shrink-0">
             {error ? (
               <p className="text-sm text-red-600 flex items-center gap-1.5">
                 <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
                 {error}
               </p>
             ) : (
-              <span className="text-xs text-slate-400">Changes are saved when you click Save</span>
+              <span className="text-[11px] text-slate-400 font-medium">Click Save to apply your changes</span>
             )}
-            <div className="flex items-center gap-3">
-              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <div className="flex items-center gap-2.5">
+              <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-bold text-white rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] disabled:opacity-50 flex items-center gap-2"
+                style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
               >
                 {saving ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                    Saving...
+                    Saving…
                   </>
                 ) : "Save Changes"}
               </button>
