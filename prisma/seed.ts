@@ -22,13 +22,30 @@ function daysFromNow(n: number): Date {
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // ── Guard: skip if already seeded ─────────────────────────────────────────
-  const alreadySeeded = await prisma.user.findUnique({
-    where: { email: "sarah.chen@company.com" },
+  // ── Guard: wipe partial seed data and re-run cleanly ─────────────────────
+  // Deletes only seed-created members (not the admin). Safe to re-run.
+  const seedEmails = [
+    "sarah.chen@company.com",
+    "james.wilson@company.com",
+    "priya.patel@company.com",
+    "marcus.rodriguez@company.com",
+    "emily.thompson@company.com",
+    "alex.kim@company.com",
+    "david.nguyen@company.com",
+  ];
+  const existingSeed = await prisma.user.findFirst({
+    where: { email: { in: seedEmails } },
   });
-  if (alreadySeeded) {
-    console.log("⚠️  Seed data already present, skipping.");
-    return;
+  if (existingSeed) {
+    console.log("🧹 Cleaning up previous seed data...");
+    // Delete in dependency order
+    await prisma.boardReaction.deleteMany({});
+    await prisma.boardComment.deleteMany({});
+    await prisma.comment.deleteMany({});
+    await prisma.taskAssignee.deleteMany({});
+    await prisma.task.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { in: seedEmails } } });
+    console.log("✅  Cleanup done.");
   }
 
   // ── 1. Admin ───────────────────────────────────────────────────────────────
@@ -536,7 +553,7 @@ async function main() {
   for (const { id, completedDaysAgo } of completedTaskIds) {
     const completedAt = daysAgo(completedDaysAgo);
     await prisma.$executeRaw`
-      UPDATE tasks SET updated_at = ${completedAt} WHERE id = ${id}
+      UPDATE tasks SET "updatedAt" = ${completedAt} WHERE id = ${id}
     `;
   }
   console.log("✅  Back-dated completed task timestamps for trend chart.");
