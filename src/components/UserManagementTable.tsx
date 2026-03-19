@@ -117,21 +117,24 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] w-full max-w-md overflow-hidden">
-        {/* Modal header with accent */}
-        <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-blue-400" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl shadow-[0_24px_80px_rgba(15,23,42,0.2)] w-full max-w-md overflow-hidden animate-scale-in">
+        {/* Gradient accent bar */}
+        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #ec4899)" }} />
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-slate-900">{isEdit ? "Edit User" : "Add New User"}</h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 leading-tight">{isEdit ? "Edit User" : "Add New User"}</h2>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">{isEdit ? "Update team member details" : "Invite someone to your team"}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -139,33 +142,33 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Full Name</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
               placeholder="John Doe"
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isEdit}
-              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all placeholder-slate-400"
               placeholder="john@company.com"
             />
-            {isEdit && <p className="text-xs text-slate-400 mt-1">Email cannot be changed after creation.</p>}
+            {isEdit && <p className="text-xs text-slate-400 mt-1.5 font-medium">Email address cannot be changed after creation.</p>}
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Role</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Role</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
@@ -173,7 +176,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2.5 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+            <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
               <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -182,12 +185,13 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
           )}
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50 rounded-b-xl">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md transition">Cancel</button>
+        <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-slate-100 bg-slate-50/80">
+          <button onClick={onClose} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">Cancel</button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md flex items-center gap-2 transition"
+            className="px-6 py-2.5 text-sm font-bold text-white rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] disabled:opacity-50 flex items-center gap-2"
+            style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
           >
             {saving ? (
               <>
@@ -195,7 +199,7 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Saving...
+                Saving…
               </>
             ) : isEdit ? "Save Changes" : "Add User"}
           </button>
@@ -325,36 +329,55 @@ export default function UserManagementTable() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-b border-slate-200 sticky top-0 z-10">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">User Management</h1>
-          <p className="text-sm text-slate-500">{users.length} total users</p>
+          <h1 className="text-xl font-bold text-slate-900 leading-tight">User Management</h1>
+          <p className="text-sm text-slate-400 font-medium mt-0.5">{users.length} total team members</p>
         </div>
         <button
           onClick={() => setEditUser(null)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
+          style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
           </svg>
           Add User
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div className="px-4 sm:px-6 py-3 bg-white border-b border-slate-100 flex items-center gap-6">
-        <div className="flex items-center gap-1.5 text-sm">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="font-semibold text-slate-800">{activeCount}</span>
-          <span className="text-slate-400">active</span>
+      {/* Stats cards */}
+      <div className="px-4 sm:px-6 py-4 bg-white border-b border-slate-100 grid grid-cols-3 gap-3">
+        <div className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+          <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+            <svg className="w-4.5 h-4.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-green-700 leading-none">{activeCount}</p>
+            <p className="text-xs font-semibold text-green-500 mt-0.5">Active</p>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-sm">
-          <div className="w-2 h-2 rounded-full bg-amber-400" />
-          <span className="font-semibold text-slate-800">{invitedCount}</span>
-          <span className="text-slate-400">invited</span>
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <svg className="w-4.5 h-4.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-amber-700 leading-none">{invitedCount}</p>
+            <p className="text-xs font-semibold text-amber-500 mt-0.5">Invited</p>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-sm">
-          <div className="w-2 h-2 rounded-full bg-gray-400" />
-          <span className="font-semibold text-slate-800">{pendingCount}</span>
-          <span className="text-slate-400">pending</span>
+        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <svg className="w-4.5 h-4.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-700 leading-none">{pendingCount}</p>
+            <p className="text-xs font-semibold text-slate-400 mt-0.5">Pending</p>
+          </div>
         </div>
       </div>
 
@@ -368,14 +391,14 @@ export default function UserManagementTable() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
-            className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            placeholder="Search by name or email…"
+            className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent w-64 bg-slate-50 focus:bg-white transition-all"
           />
         </div>
         <select
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value as UserRole | "")}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="text-sm border border-slate-200 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all font-medium"
         >
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
@@ -384,7 +407,7 @@ export default function UserManagementTable() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as AccountStatus | "")}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className="text-sm border border-slate-200 rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all font-medium"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -394,15 +417,15 @@ export default function UserManagementTable() {
         {(search || filterRole || filterStatus) && (
           <button
             onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }}
-            className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 transition"
+            className="text-xs text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors font-semibold"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            Clear filters
+            Clear
           </button>
         )}
-        <span className="ml-auto text-xs text-slate-400">{filtered.length} of {users.length} shown</span>
+        <span className="ml-auto text-xs text-slate-400 font-medium">{filtered.length} of {users.length} shown</span>
       </div>
 
       {/* Table */}

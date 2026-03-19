@@ -229,9 +229,9 @@ function CommentItem({
       </div>
       <div className="flex-1 min-w-0">
         <div
-          className={`bg-white rounded-xl border px-4 py-3 shadow-sm ${
+          className={`bg-white rounded-2xl border px-4 py-3.5 shadow-sm hover:shadow-md transition-shadow ${
             comment.pinned
-              ? "border-amber-200 bg-amber-50/30"
+              ? "border-amber-200 bg-gradient-to-br from-amber-50/50 to-white"
               : "border-slate-100"
           }`}
         >
@@ -574,8 +574,8 @@ function TaskActivityItem({
         </div>
         <div className="flex-1 min-w-0">
           <div
-            className={`bg-white rounded-xl border px-4 py-3 shadow-sm ${
-              tc.pinned ? "border-amber-200 bg-amber-50/30" : "border-slate-100"
+            className={`bg-white rounded-2xl border px-4 py-3.5 shadow-sm hover:shadow-md transition-shadow ${
+              tc.pinned ? "border-amber-200 bg-gradient-to-br from-amber-50/50 to-white" : "border-slate-100"
             }`}
           >
             <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -1023,16 +1023,19 @@ export default function BoardDiscussion({
 
   return (
     <div className="mx-6 mb-6">
-      <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_4px_24px_rgba(15,23,42,0.06)] overflow-hidden">
         {/* Header */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-100 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-5 hover:bg-slate-50/80 transition-colors group"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+              style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" }}
+            >
               <svg
-                className="w-4 h-4 text-blue-600"
+                className="w-5 h-5 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1046,84 +1049,75 @@ export default function BoardDiscussion({
               </svg>
             </div>
             <div className="text-left">
-              <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2.5">
                 Board Discussion
                 {totalCount > 0 && (
-                  <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 font-medium">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
                     {totalCount}
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Project-wide team discussion
+              <p className="text-xs text-slate-400 mt-0.5 font-medium">
+                Project-wide team discussion &amp; activity
               </p>
             </div>
           </div>
-          <svg
-            className={`w-5 h-5 text-slate-400 transition-transform ${
-              collapsed ? "" : "rotate-180"
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
+          <div className={`w-8 h-8 rounded-full bg-slate-100 group-hover:bg-slate-200 flex items-center justify-center transition-all ${collapsed ? "" : "rotate-180"}`}>
+            <svg
+              className="w-4 h-4 text-slate-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
         </button>
 
         {!collapsed && (
           <div className="border-t border-slate-200">
-            {/* Tabs */}
-            <div className="flex items-center gap-1 px-6 pt-3 pb-0 bg-white/60 border-b border-slate-200">
+            {/* Tabs — pill style */}
+            <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-200">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTab("discussion");
-                }}
-                className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
+                onClick={(e) => { e.stopPropagation(); setTab("discussion"); }}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all ${
                   tab === "discussion"
-                    ? "border-blue-600 text-blue-600 bg-white"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    ? "text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/70"
                 }`}
+                style={tab === "discussion" ? { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" } : {}}
               >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
                 Discussion
                 {totalCount > 0 && (
-                  <span
-                    className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                      tab === "discussion"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
+                  <span className={`text-[10px] rounded-full px-1.5 py-0.5 font-bold ${tab === "discussion" ? "bg-white/25 text-white" : "bg-slate-200 text-slate-600"}`}>
                     {totalCount}
                   </span>
                 )}
               </button>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTab("activity");
-                }}
-                className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
+                onClick={(e) => { e.stopPropagation(); setTab("activity"); }}
+                className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all ${
                   tab === "activity"
-                    ? "border-blue-600 text-blue-600 bg-white"
-                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    ? "text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/70"
                 }`}
+                style={tab === "activity" ? { background: "linear-gradient(135deg, #4f46e5, #7c3aed)" } : {}}
               >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
                 Task Activity
                 {taskComments.length > 0 && (
-                  <span
-                    className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 font-medium ${
-                      tab === "activity"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
+                  <span className={`text-[10px] rounded-full px-1.5 py-0.5 font-bold ${tab === "activity" ? "bg-white/25 text-white" : "bg-slate-200 text-slate-600"}`}>
                     {taskComments.length}
                   </span>
                 )}
@@ -1132,20 +1126,20 @@ export default function BoardDiscussion({
 
             {tab === "discussion" && (
               <>
-                {/* New comment input */}
-                <div className="px-6 py-4 bg-white/60 border-b border-slate-200">
-                  <div className="flex gap-3">
+                {/* New comment compose */}
+                <div className="px-6 py-5 bg-white border-b border-slate-200">
+                  <div className="flex gap-3 items-start">
                     <div
-                      className={`w-8 h-8 rounded-full ${avatarColor(
+                      className={`w-9 h-9 rounded-full ${avatarColor(
                         currentUser.name
-                      )} flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 overflow-hidden`}
+                      )} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden ring-2 ring-white shadow-sm`}
                     >
                       {currentUserAvatar ? (
                         <Image
                           src={currentUserAvatar}
                           alt={currentUser.name}
-                          width={32}
-                          height={32}
+                          width={36}
+                          height={36}
                           className="w-full h-full object-cover"
                           unoptimized
                         />
@@ -1154,124 +1148,77 @@ export default function BoardDiscussion({
                       )}
                     </div>
                     <div className="flex-1">
-                      <MentionTextarea
-                        value={newComment}
-                        onChange={setNewComment}
-                        onMentionedUsersChange={setMentionedUserIds}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handlePost();
-                          }
-                        }}
-                        activeUsers={activeUsers}
-                        rows={2}
-                        placeholder="Share an update or ask a question... (@ to mention, Enter to post)"
-                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-white transition"
-                      />
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-slate-400">
-                          Type{" "}
-                          <kbd className="px-1 py-0.5 bg-slate-100 rounded text-[10px] font-mono">
-                            @
-                          </kbd>{" "}
-                          to mention · Shift+Enter for new line
-                        </p>
-                        <button
-                          onClick={handlePost}
-                          disabled={posting || !newComment.trim()}
-                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors"
-                        >
-                          {posting ? (
-                            <>
-                              <svg
-                                className="w-3.5 h-3.5 animate-spin"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                />
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                                />
-                              </svg>
-                              Posting...
-                            </>
-                          ) : (
-                            <>
-                              <svg
-                                className="w-3.5 h-3.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                />
-                              </svg>
-                              Post
-                            </>
-                          )}
-                        </button>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:bg-white transition-all overflow-hidden shadow-sm">
+                        <MentionTextarea
+                          value={newComment}
+                          onChange={setNewComment}
+                          onMentionedUsersChange={setMentionedUserIds}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handlePost();
+                            }
+                          }}
+                          activeUsers={activeUsers}
+                          rows={2}
+                          placeholder="Share an update or ask a question… (@ to mention)"
+                          className="w-full border-none px-4 py-3 text-sm focus:outline-none resize-none bg-transparent placeholder-slate-400"
+                        />
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/80 border-t border-slate-200/60">
+                          <p className="text-[11px] text-slate-400 font-medium">
+                            <kbd className="px-1 py-0.5 bg-slate-200 rounded text-[10px] font-mono">@</kbd>{" "}
+                            mention · <kbd className="px-1 py-0.5 bg-slate-200 rounded text-[10px] font-mono">Shift+Enter</kbd> new line
+                          </p>
+                          <button
+                            onClick={handlePost}
+                            disabled={posting || !newComment.trim()}
+                            className="flex items-center gap-2 px-4 py-1.5 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm hover:shadow-md active:scale-[0.97]"
+                            style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                          >
+                            {posting ? (
+                              <>
+                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                Posting…
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                Post
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Comments list */}
-                <div className="px-6 py-4 space-y-4 max-h-[480px] overflow-y-auto bg-slate-50/80">
+                <div className="px-6 py-5 space-y-4 max-h-[480px] overflow-y-auto bg-slate-50/60">
                   {loading ? (
-                    <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
-                      <svg
-                        className="w-4 h-4 animate-spin text-blue-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
+                    <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+                      <svg className="w-5 h-5 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Loading discussion...
+                      <span className="text-sm font-medium">Loading discussion…</span>
                     </div>
                   ) : comments.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 gap-3 text-slate-400">
-                      <svg
-                        className="w-10 h-10 text-slate-300"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
-                      </svg>
-                      <p className="text-sm">
-                        No discussion yet. Start the conversation!
-                      </p>
+                    <div className="flex flex-col items-center py-14 gap-4 text-slate-400">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-slate-600">No discussion yet</p>
+                        <p className="text-xs text-slate-400 mt-1">Be the first to start the conversation!</p>
+                      </div>
                     </div>
                   ) : (
                     comments.map((c) => (
@@ -1293,46 +1240,26 @@ export default function BoardDiscussion({
             )}
 
             {tab === "activity" && (
-              <div className="px-6 py-4 space-y-3 max-h-[560px] overflow-y-auto bg-slate-50/80">
+              <div className="px-6 py-5 space-y-3 max-h-[560px] overflow-y-auto bg-slate-50/60">
                 {loading ? (
-                  <div className="flex items-center justify-center py-8 gap-2 text-gray-400">
-                    <svg
-                      className="w-4 h-4 animate-spin text-blue-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
+                  <div className="flex items-center justify-center py-12 gap-3 text-slate-400">
+                    <svg className="w-5 h-5 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Loading activity...
+                    <span className="text-sm font-medium">Loading activity…</span>
                   </div>
                 ) : taskComments.length === 0 ? (
-                  <div className="flex flex-col items-center py-10 gap-3 text-gray-400">
-                    <svg
-                      className="w-10 h-10 text-gray-300"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                    <p className="text-sm">No task comments yet.</p>
+                  <div className="flex flex-col items-center py-14 gap-4 text-slate-400">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-slate-600">No task activity yet</p>
+                      <p className="text-xs text-slate-400 mt-1">Task comments will appear here.</p>
+                    </div>
                   </div>
                 ) : (
                   taskComments.map((tc) => (

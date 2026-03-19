@@ -177,7 +177,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Animations ────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -187,14 +187,33 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 200ms ease-out forwards;
+  animation: fadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: scaleIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Improved input focus glow ─────────────────────────────────────────── */
+input:focus, textarea:focus, select:focus {
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+/* ── Table row hover animation ─────────────────────────────────────────── */
+tbody tr {
+  transition: background-color 120ms;
 }

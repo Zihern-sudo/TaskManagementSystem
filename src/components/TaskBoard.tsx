@@ -35,11 +35,11 @@ interface TaskBoardProps {
   currentUser: SessionUser;
 }
 
-const COLUMNS: { id: TaskStatus; label: string; bg: string; border: string; headerColor: string }[] = [
-  { id: "not_started", label: "To Do", bg: "bg-gray-50", border: "border-gray-300", headerColor: "bg-gray-400" },
-  { id: "in_progress", label: "In Progress", bg: "bg-blue-50", border: "border-blue-200", headerColor: "bg-blue-500" },
-  { id: "in_review", label: "In Review", bg: "bg-yellow-50", border: "border-yellow-200", headerColor: "bg-yellow-500" },
-  { id: "completed", label: "Done", bg: "bg-green-50", border: "border-green-200", headerColor: "bg-green-500" },
+const COLUMNS: { id: TaskStatus; label: string; bg: string; border: string; headerColor: string; dotColor: string; gradient: string }[] = [
+  { id: "not_started", label: "To Do", bg: "bg-slate-50/70", border: "border-slate-200", headerColor: "text-slate-600", dotColor: "bg-slate-400", gradient: "linear-gradient(135deg, #64748b, #94a3b8)" },
+  { id: "in_progress", label: "In Progress", bg: "bg-blue-50/60", border: "border-blue-100", headerColor: "text-blue-700", dotColor: "bg-blue-500", gradient: "linear-gradient(135deg, #3b82f6, #6366f1)" },
+  { id: "in_review", label: "In Review", bg: "bg-amber-50/60", border: "border-amber-100", headerColor: "text-amber-700", dotColor: "bg-amber-500", gradient: "linear-gradient(135deg, #f59e0b, #f97316)" },
+  { id: "completed", label: "Done", bg: "bg-green-50/60", border: "border-green-100", headerColor: "text-green-700", dotColor: "bg-green-500", gradient: "linear-gradient(135deg, #22c55e, #16a34a)" },
 ];
 
 function getInitials(name: string) {
@@ -140,24 +140,30 @@ function TaskCard({ task, onClick, isDragging }: TaskCardProps) {
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`bg-white rounded-lg border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[task.priority]} p-3 cursor-pointer transition-all duration-150 group select-none ${
-        isDragging ? "opacity-40" : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:-translate-y-px hover:border-slate-300"
+      className={`bg-white rounded-xl border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[task.priority]} p-3.5 cursor-pointer transition-all duration-150 group select-none ${
+        isDragging ? "opacity-40 rotate-1 scale-105 shadow-lg" : "hover:shadow-[0_6px_20px_rgba(15,23,42,0.1)] hover:-translate-y-0.5 hover:border-slate-300"
       }`}
     >
-      <p className="text-[13px] font-medium text-slate-800 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
-        {task.title}
-      </p>
+      {/* Priority dot + title */}
+      <div className="flex items-start gap-2 mb-2">
+        <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
+        <p className="text-[13px] font-semibold text-slate-800 leading-snug group-hover:text-indigo-600 transition-colors line-clamp-2">
+          {task.title}
+        </p>
+      </div>
 
       {task.description && (
-        <p className="text-[11px] text-slate-400 mb-2.5 line-clamp-1 leading-relaxed">{task.description}</p>
+        <p className="text-[11px] text-slate-400 mb-3 line-clamp-1 leading-relaxed pl-4">{task.description}</p>
       )}
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
         <div className="flex items-center gap-1.5">
           {task.dueDate && (() => {
             const { formatted, overdue } = formatDueDate(task.dueDate!);
             return (
-              <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-red-500 font-medium" : "text-slate-400"}`}>
+              <span className={`text-[11px] flex items-center gap-1 font-medium rounded-full px-2 py-0.5 ${
+                overdue ? "text-red-600 bg-red-50" : "text-slate-400 bg-slate-50"
+              }`}>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -186,20 +192,27 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
 
   return (
     <div className="flex flex-col min-w-0">
-      <div className="flex items-center gap-2 mb-3 px-0.5">
-        <div className={`w-2 h-2 rounded-full ${column.headerColor}`} />
-        <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">{column.label}</span>
-        <span className="ml-auto text-[11px] bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5 font-medium tabular-nums min-w-[20px] text-center">
+      {/* Column header */}
+      <div className="flex items-center gap-2.5 mb-3 px-1">
+        <div
+          className="w-3 h-3 rounded-full shrink-0 shadow-sm"
+          style={{ background: column.gradient }}
+        />
+        <span className={`text-[11px] font-bold uppercase tracking-widest ${column.headerColor}`}>{column.label}</span>
+        <span
+          className="ml-auto text-[11px] font-bold rounded-full px-2 py-0.5 tabular-nums min-w-[22px] text-center text-white shadow-sm"
+          style={{ background: column.gradient }}
+        >
           {tasks.length}
         </span>
       </div>
 
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-[200px] rounded-xl p-2 space-y-2 transition-all duration-150 ${
+        className={`flex-1 min-h-[220px] rounded-2xl p-2.5 space-y-2.5 transition-all duration-200 ${
           isOver
-            ? "bg-blue-50 ring-2 ring-blue-200 ring-inset"
-            : "bg-slate-50/60"
+            ? "ring-2 ring-indigo-300 ring-inset bg-indigo-50/60"
+            : column.bg
         }`}
       >
         {tasks.map((task) => (
@@ -211,8 +224,11 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
           />
         ))}
         {tasks.length === 0 && (
-          <div className="flex items-center justify-center h-full min-h-[80px] text-[11px] text-slate-400">
-            No tasks
+          <div className="flex flex-col items-center justify-center h-full min-h-[100px] gap-2 text-slate-300">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-[11px] font-semibold">Drop tasks here</span>
           </div>
         )}
       </div>
@@ -686,11 +702,14 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
-        <div className="flex items-center justify-between px-4 sm:px-6 h-12">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between px-4 sm:px-6 h-14">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-sm font-semibold text-slate-900">Task Board</h1>
-            <span className="text-[11px] bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 font-medium tabular-nums">
+            <h1 className="text-sm font-bold text-slate-900">Task Board</h1>
+            <span
+              className="text-[11px] font-bold rounded-full px-2.5 py-0.5 text-white shadow-sm tabular-nums"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+            >
               {tasks.length}
             </span>
           </div>
@@ -797,10 +816,11 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             {/* Create task */}
             <button
               onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
-              className="flex items-center gap-1.5 h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-md transition-colors"
+              className="flex items-center gap-1.5 h-8 px-3.5 text-white text-[13px] font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
               </svg>
               <span className="hidden sm:inline">New Task</span>
             </button>
@@ -828,7 +848,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
       </div>
 
       {/* Board content */}
-      <div className="flex-1 p-4 sm:p-6 overflow-auto bg-white">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto bg-slate-50/60">
         {view === "kanban" ? (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -844,8 +864,11 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             </div>
             <DragOverlay>
               {activeTask && (
-                <div className={`bg-white rounded-lg border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[activeTask.priority]} shadow-[0_12px_32px_rgba(0,0,0,0.15)] p-3 w-60 rotate-2 opacity-95`}>
-                  <p className="text-[13px] font-medium text-slate-800 line-clamp-2">{activeTask.title}</p>
+                <div className={`bg-white rounded-xl border border-slate-200 border-l-[3px] ${PRIORITY_BORDER[activeTask.priority]} shadow-[0_20px_40px_rgba(15,23,42,0.2)] p-3.5 w-64 rotate-2 scale-105 opacity-95`}>
+                  <div className="flex items-start gap-2">
+                    <span className={`w-2 h-2 rounded-full shrink-0 mt-1 ${PRIORITY_DOT[activeTask.priority]}`} />
+                    <p className="text-[13px] font-semibold text-slate-800 line-clamp-2">{activeTask.title}</p>
+                  </div>
                 </div>
               )}
             </DragOverlay>
