@@ -187,8 +187,14 @@ interface KanbanColumnProps {
   activeId: string | null;
 }
 
+const KANBAN_PAGE_SIZE = 5;
+
 function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const [expanded, setExpanded] = useState(false);
+
+  const visible = expanded ? tasks : tasks.slice(0, KANBAN_PAGE_SIZE);
+  const hidden = tasks.length - KANBAN_PAGE_SIZE;
 
   return (
     <div className="flex flex-col min-w-0">
@@ -215,7 +221,7 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
             : column.bg
         }`}
       >
-        {tasks.map((task) => (
+        {visible.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
@@ -232,6 +238,30 @@ function KanbanColumn({ column, tasks, onTaskClick, activeId }: KanbanColumnProp
           </div>
         )}
       </div>
+
+      {/* Show more / Show less */}
+      {tasks.length > KANBAN_PAGE_SIZE && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 text-[12px] font-semibold text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+        >
+          {expanded ? (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              Show less
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              {hidden} more task{hidden !== 1 ? "s" : ""}
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }
