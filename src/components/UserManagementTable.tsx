@@ -7,20 +7,20 @@ import { User, UserRole, AccountStatus } from "@/types";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 const STATUS_STYLES: Record<AccountStatus, string> = {
-  active: "bg-green-100 text-green-700 border border-green-200",
-  invited: "bg-amber-100 text-amber-700 border border-amber-200",
-  pending: "bg-gray-100 text-gray-600 border border-gray-200",
+  active: "bg-green-50 text-green-700 border-green-200",
+  invited: "bg-amber-50 text-amber-700 border-amber-200",
+  pending: "bg-slate-100 text-slate-500 border-slate-200",
 };
 
 const STATUS_DOTS: Record<AccountStatus, string> = {
   active: "bg-green-500",
   invited: "bg-amber-400",
-  pending: "bg-gray-400",
+  pending: "bg-slate-400",
 };
 
 const ROLE_STYLES: Record<UserRole, string> = {
-  admin: "bg-blue-100 text-blue-700 border border-blue-200",
-  member: "bg-gray-100 text-gray-600 border border-gray-200",
+  admin: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  member: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const AVATAR_COLORS = [
@@ -66,12 +66,12 @@ function SortTh({
   const active = sortField === field && sortDir !== "none";
   return (
     <th
-      className={`text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider cursor-pointer select-none hover:bg-slate-50 transition-colors group ${className ?? ""}`}
+      className={`text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors group ${active ? "text-indigo-600 bg-indigo-50/60" : "text-slate-500 hover:bg-slate-50/80 hover:text-slate-700"} ${className ?? ""}`}
       onClick={() => onSort(field)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {label}
-        <span className={`text-xs transition-opacity ${active ? "opacity-100 text-blue-500" : "opacity-0 group-hover:opacity-40"}`}>
+        <span className={`text-[10px] transition-all ${active ? "opacity-100 text-indigo-500" : "opacity-0 group-hover:opacity-50"}`}>
           {sortDir === "asc" && sortField === field ? "↑" : sortDir === "desc" && sortField === field ? "↓" : "↕"}
         </span>
       </div>
@@ -439,28 +439,35 @@ export default function UserManagementTable() {
             Loading users...
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Top accent bar */}
+            <div className="h-1" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)" }} />
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
+                <tr className="border-b-2 border-slate-100 bg-gradient-to-b from-slate-50 to-white">
                   <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
                   <SortTh field="fullName" label="User" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
                   <SortTh field="role" label="Role" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                   <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortTh field="createdAt" label="Joined" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-                  <th className="text-right px-5 py-3.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                  <th className="text-right px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-50">
                 {sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-16">
-                      <div className="flex flex-col items-center gap-3 text-slate-400">
-                        <svg className="w-10 h-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <p className="text-sm">No users found</p>
+                    <td colSpan={6} className="text-center py-20">
+                      <div className="flex flex-col items-center gap-4 text-slate-400">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                          <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-600">No users found</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Try adjusting your filters</p>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -468,13 +475,13 @@ export default function UserManagementTable() {
                   sorted.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${idx % 2 === 1 ? "bg-slate-50/30" : ""}`}
+                      className="border-b border-slate-100 hover:bg-indigo-50/30 transition-colors group"
                     >
-                      <td className="px-5 py-4 text-slate-400 text-xs font-mono">{idx + 1}</td>
+                      <td className="px-5 py-4 text-slate-300 text-xs font-mono w-12">{idx + 1}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-10 h-10 rounded-xl ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm overflow-hidden`}
+                            className={`w-10 h-10 rounded-xl ${AVATAR_COLORS[idx % AVATAR_COLORS.length]} flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm overflow-hidden ring-2 ring-white`}
                           >
                             {user.avatarUrl ? (
                               <Image src={user.avatarUrl} alt={user.fullName} width={40} height={40} className="w-full h-full object-cover" unoptimized />
@@ -483,38 +490,38 @@ export default function UserManagementTable() {
                             )}
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-900">{user.fullName}</div>
+                            <div className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors">{user.fullName}</div>
                             <div className="text-xs text-slate-400">{user.email}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-4 hidden md:table-cell">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${ROLE_STYLES[user.role]}`}>
+                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize ${ROLE_STYLES[user.role]}`}>
                           {user.role}
                         </span>
                       </td>
                       <td className="px-4 py-4 hidden lg:table-cell">
-                        <span className={`text-xs px-2.5 py-1.5 rounded-full font-medium capitalize flex items-center gap-1.5 w-fit ${STATUS_STYLES[user.status]}`}>
+                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize gap-1.5 w-fit ${STATUS_STYLES[user.status]}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOTS[user.status]}`} />
                           {user.status}
                         </span>
                       </td>
-                      <td className="px-4 py-4 hidden xl:table-cell text-slate-500 text-xs">
+                      <td className="px-4 py-4 hidden xl:table-cell text-slate-400 text-xs font-medium">
                         {formatDate(user.createdAt)}
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                           {user.status === "pending" && (
                             <>
                               <button
                                 onClick={() => handleInvite(user.id)}
-                                className="text-xs px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg font-medium transition-colors border border-green-200"
+                                className="text-xs px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-semibold transition-colors border border-emerald-200"
                               >
                                 Invite
                               </button>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -523,7 +530,7 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => promptDelete(user.id)}
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -536,7 +543,7 @@ export default function UserManagementTable() {
                             <>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -545,13 +552,13 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => promptRevokeInvite(user.id)}
-                                className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-medium transition-colors border border-amber-200"
+                                className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-semibold transition-colors border border-amber-200"
                               >
                                 Revoke
                               </button>
                               <button
                                 onClick={() => promptDelete(user.id)}
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -564,7 +571,7 @@ export default function UserManagementTable() {
                             <>
                               <button
                                 onClick={() => setEditUser(user)}
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                 title="Edit"
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -573,7 +580,7 @@ export default function UserManagementTable() {
                               </button>
                               <button
                                 onClick={() => promptDeactivate(user.id)}
-                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-medium transition-colors border border-red-200"
+                                className="text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-semibold transition-colors border border-red-200"
                               >
                                 Deactivate
                               </button>
