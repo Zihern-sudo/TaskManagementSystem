@@ -826,7 +826,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             )}
 
             {/* Create task — admin only */}
-            {currentUserRole === "admin" && (
+            {currentUser.role === "admin" && (
               <button
                 onClick={() => { setSelectedTask(null); setIsNewTask(true); }}
                 className="flex items-center gap-1.5 h-8 px-3.5 text-white text-[13px] font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
