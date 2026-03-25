@@ -1,16 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Sidebar from "./Sidebar";
 import { SessionUser } from "@/types";
 
 interface DashboardShellProps {
   user: SessionUser;
+  needsPasswordSetup: boolean;
   children: React.ReactNode;
 }
 
-export default function DashboardShell({ user, children }: DashboardShellProps) {
+export default function DashboardShell({ user, needsPasswordSetup, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  const showBanner = needsPasswordSetup && !bannerDismissed;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -45,6 +50,33 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
             <span className="font-semibold text-slate-900 text-sm">RIO Task</span>
           </div>
         </div>
+
+        {/* Password setup banner — shown to SSO users who haven't set a password */}
+        {showBanner && (
+          <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-amber-900">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p className="text-[13px] leading-snug">
+                <span className="font-semibold">Secure your account.</span>{" "}
+                You signed in with Google but haven&apos;t set a password yet — you won&apos;t be able to log in if Google SSO is unavailable.{" "}
+                <Link href="/profile" className="underline font-semibold hover:text-amber-700 transition-colors">
+                  Set a password
+                </Link>
+              </p>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="shrink-0 p-1 rounded hover:bg-amber-100 transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto">
           {children}
