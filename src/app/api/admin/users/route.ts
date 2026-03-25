@@ -5,7 +5,7 @@ import { Role } from "@prisma/client";
 
 // ── Shared select shape ────────────────────────────────────────────────────
 
-const USER_SELECT = {
+export const USER_SELECT = {
   id: true,
   fullName: true,
   email: true,
@@ -13,13 +13,41 @@ const USER_SELECT = {
   status: true,
   avatarUrl: true,
   createdAt: true,
+  customFieldValues: {
+    select: {
+      field: { select: { id: true, label: true, fieldKey: true, type: true, order: true } },
+      value: true,
+    },
+  },
 } as const;
+
+// Flatten user custom field values to a clean shape
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function serializeUser(user: any) {
+  const { customFieldValues, ...rest } = user;
+  return {
+    ...rest,
+    customFields: ((customFieldValues ?? []) as Array<{
+      field: { id: string; label: string; fieldKey: string; type: string; order: number };
+      value: string;
+    }>)
+      .sort((a, b) => (a.field.order ?? 0) - (b.field.order ?? 0))
+      .map((v) => ({
+        fieldId: v.field.id,
+        fieldKey: v.field.fieldKey,
+        label: v.field.label,
+        type: v.field.type,
+        value: v.value,
+      })),
+    createdAt: new Date(user.createdAt).toISOString(),
+  };
+}
 
 // ── GET /api/admin/users ───────────────────────────────────────────────────
 
 /**
  * Returns all users ordered by creation date (newest first).
- * Fields: id, fullName, email, role, status, createdAt.
+ * Includes user-entity custom field values.
  */
 export async function GET() {
   const users = await db.user.findMany({
@@ -27,7 +55,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return ok("Users retrieved successfully.", { users });
+  return ok("Users retrieved successfully.", { users: users.map(serializeUser) });
 }
 
 // ── POST /api/admin/users ──────────────────────────────────────────────────
@@ -93,5 +121,5 @@ export async function POST(req: NextRequest) {
     select: USER_SELECT,
   });
 
-  return ok("User created successfully.", { user }, 201);
+  return ok("User created successfully.", { user: serializeUser(user) }, 201);
 }

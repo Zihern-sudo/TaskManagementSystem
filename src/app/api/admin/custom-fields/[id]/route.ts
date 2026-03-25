@@ -9,8 +9,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * Updates a custom field definition. Admin only.
- * Mutable fields: label, options (picklist only), required, order.
- * Immutable after creation: fieldKey, type.
+ * Mutable fields: label, options (picklist only), required, order, showInListView.
+ * Immutable after creation: fieldKey, type, entity.
  */
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
@@ -63,6 +63,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     updateData.options = (data.options as string[]).map((o) => (o as string).trim());
   }
   if ("required" in data) updateData.required = data.required === true;
+  if ("showInListView" in data) updateData.showInListView = data.showInListView === true;
   if ("order" in data) updateData.order = data.order as number;
 
   const field = await db.customField.update({ where: { id }, data: updateData });

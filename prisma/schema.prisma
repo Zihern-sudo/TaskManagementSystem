@@ -43,6 +43,11 @@ enum FieldType {
   picklist
 }
 
+enum FieldEntity {
+  task
+  user
+}
+
 // ─────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────
@@ -67,10 +72,11 @@ model User {
   passwordResetExpiry   DateTime?
 
   // Relations
-  taskAssignments TaskAssignee[]
-  comments        Comment[]
-  boardComments   BoardComment[]
-  boardReactions  BoardReaction[]
+  taskAssignments   TaskAssignee[]
+  comments          Comment[]
+  boardComments     BoardComment[]
+  boardReactions    BoardReaction[]
+  customFieldValues UserCustomFieldValue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -177,15 +183,18 @@ model BoardReaction {
 // ─────────────────────────────────────────────
 
 model CustomField {
-  id       String    @id @default(cuid())
-  label    String
-  fieldKey String    @unique
-  type     FieldType
-  options  String[]  @default([])
-  required Boolean   @default(false)
-  order    Int       @default(0)
+  id             String      @id @default(cuid())
+  label          String
+  fieldKey       String      @unique
+  type           FieldType
+  entity         FieldEntity @default(task)
+  showInListView Boolean     @default(false)
+  options        String[]    @default([])
+  required       Boolean     @default(false)
+  order          Int         @default(0)
 
-  values TaskCustomFieldValue[]
+  taskValues TaskCustomFieldValue[]
+  userValues UserCustomFieldValue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -205,4 +214,18 @@ model TaskCustomFieldValue {
 
   @@unique([taskId, fieldId])
   @@map("task_custom_field_values")
+}
+
+model UserCustomFieldValue {
+  id    String @id @default(cuid())
+  value String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fieldId String
+  field   CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fieldId])
+  @@map("user_custom_field_values")
 }

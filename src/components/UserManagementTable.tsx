@@ -5,6 +5,8 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { User, UserRole, AccountStatus } from "@/types";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useCustomFields } from "@/contexts/CustomFieldsContext";
+import CustomFieldFormModal from "@/components/CustomFieldFormModal";
 
 const STATUS_STYLES: Record<AccountStatus, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
@@ -89,9 +91,15 @@ interface UserModalProps {
 
 function UserModal({ user, onClose, onSave }: UserModalProps) {
   const isEdit = !!user;
+  const { userFields } = useCustomFields();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [role, setRole] = useState<UserRole>(user?.role ?? "member");
+  const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    user?.customFields?.forEach((cf) => { init[cf.fieldId] = cf.value; });
+    return init;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -100,10 +108,14 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
     setSaving(true);
     setError("");
     try {
+      const customFieldValues = Object.entries(cfValues)
+        .filter(([, v]) => v.trim() !== "")
+        .map(([fieldId, value]) => ({ fieldId, value }));
+
       const res = await fetch(isEdit ? `/api/admin/users/${user!.id}` : "/api/admin/users", {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: fullName.trim(), email: email.trim(), role }),
+        body: JSON.stringify({ fullName: fullName.trim(), email: email.trim(), role, customFieldValues }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.message || "Failed to save user."); return; }
@@ -175,6 +187,41 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
             </select>
           </div>
 
+          {userFields.length > 0 && (
+            <>
+              <div className="border-t border-slate-100 pt-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Fields</p>
+                <div className="space-y-3">
+                  {userFields.map((field) => (
+                    <div key={field.id}>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
+                      </label>
+                      {field.type === "picklist" ? (
+                        <select
+                          value={cfValues[field.id] ?? ""}
+                          onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                        >
+                          <option value="">— Select —</option>
+                          {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={cfValues[field.id] ?? ""}
+                          onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
+                          placeholder={`Enter ${field.label.toLowerCase()}…`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
               <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -212,6 +259,9 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 // ── Main Table ─────────────────────────────────────────────────────────────
 
 export default function UserManagementTable() {
+  const { userFields, refresh: refreshFields } = useCustomFields();
+  const listCustomFields = userFields.filter((f) => f.showInListView);
+  const [showCFModal, setShowCFModal] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -332,16 +382,27 @@ export default function UserManagementTable() {
           <h1 className="text-xl font-bold text-slate-900 leading-tight">User Management</h1>
           <p className="text-sm text-slate-400 font-medium mt-0.5">{users.length} total team members</p>
         </div>
-        <button
-          onClick={() => setEditUser(null)}
-          className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
-          style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-          </svg>
-          Add User
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCFModal(true)}
+            className="hidden sm:flex items-center gap-1.5 h-9 px-3 bg-white hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-xl border border-slate-200 hover:border-slate-300 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            Custom Field
+          </button>
+          <button
+            onClick={() => setEditUser(null)}
+            className="flex items-center gap-2 px-4 py-2.5 text-white text-sm font-bold rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]"
+            style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            Add User
+          </button>
+        </div>
       </div>
 
       {/* Stats cards */}
@@ -451,6 +512,11 @@ export default function UserManagementTable() {
                   <SortTh field="role" label="Role" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
                   <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                   <SortTh field="createdAt" label="Joined" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
+                  {listCustomFields.map((cf) => (
+                    <th key={cf.id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
+                      {cf.label}
+                    </th>
+                  ))}
                   <th className="text-right px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -509,6 +575,14 @@ export default function UserManagementTable() {
                       <td className="px-4 py-4 hidden xl:table-cell text-slate-400 text-xs font-medium">
                         {formatDate(user.createdAt)}
                       </td>
+                      {listCustomFields.map((cf) => {
+                        const val = user.customFields?.find((c) => c.fieldId === cf.id)?.value ?? "";
+                        return (
+                          <td key={cf.id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
+                            {val || <span className="text-slate-300">—</span>}
+                          </td>
+                        );
+                      })}
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
                           {user.status === "pending" && (
@@ -616,6 +690,15 @@ export default function UserManagementTable() {
           variant={confirmState.variant}
           onConfirm={confirmState.onConfirm}
           onCancel={() => setConfirmState(null)}
+        />
+      )}
+
+      {/* Custom Field Modal */}
+      {showCFModal && (
+        <CustomFieldFormModal
+          defaultEntity="user"
+          onClose={() => setShowCFModal(false)}
+          onSaved={(_saved) => { refreshFields(); setShowCFModal(false); }}
         />
       )}
     </div>

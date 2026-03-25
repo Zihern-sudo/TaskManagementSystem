@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Sidebar from "./Sidebar";
+import { CustomFieldsProvider } from "@/contexts/CustomFieldsContext";
 import { SessionUser } from "@/types";
 
 interface DashboardShellProps {
@@ -79,7 +80,9 @@ export default function DashboardShell({ user, needsPasswordSetup, children }: D
         )}
 
         <main className="flex-1 overflow-y-auto">
-          {children}
+          <CustomFieldsProvider>
+            {children}
+          </CustomFieldsProvider>
         </main>
       </div>
     </div>
