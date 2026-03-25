@@ -65,7 +65,7 @@ const STATUS_ORDER: Record<TaskStatus, number> = { not_started: 0, in_progress: 
 const PRIORITY_BORDER: Record<TaskPriority, string> = {
   critical: "border-l-red-500",
   high: "border-l-orange-500",
-  medium: "border-l-blue-500",
+  medium: "border-l-indigo-500",
   low: "border-l-slate-300",
 };
 
@@ -760,7 +760,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             {/* Mobile search toggle */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className={`sm:hidden p-1.5 rounded-md transition-colors ${mobileSearchOpen ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-100"}`}
+              className={`sm:hidden p-1.5 rounded-md transition-colors ${mobileSearchOpen ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-100"}`}
               aria-label="Toggle search"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -778,7 +778,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks..."
-                className="pl-8 pr-3 h-8 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-44 placeholder-slate-400"
+                className="pl-8 pr-3 h-8 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-44 placeholder-slate-400"
               />
             </div>
 
@@ -786,7 +786,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "")}
-              className="h-8 text-[13px] border border-slate-200 rounded-md px-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700 hidden md:block"
+              className="h-8 text-[13px] border border-slate-200 rounded-md px-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-700 hidden md:block"
             >
               <option value="">All Priorities</option>
               {(["critical", "high", "medium", "low"] as TaskPriority[]).map((p) => (
@@ -802,12 +802,12 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                   onClick={() => setFilterAssignedToMe(!filterAssignedToMe)}
                   className={`hidden md:flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-medium border transition-colors ${
                     filterAssignedToMe
-                      ? "bg-blue-600 text-white border-blue-600"
+                      ? "bg-indigo-600 text-white border-indigo-600"
                       : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   }`}
                 >
                   <span className={`min-w-[18px] h-4 rounded-full flex items-center justify-center text-[10px] font-bold px-1 ${
-                    filterAssignedToMe ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                    filterAssignedToMe ? "bg-white/20 text-white" : "bg-indigo-100 text-indigo-700"
                   }`}>
                     {myCount}
                   </span>
@@ -821,7 +821,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
               <button
                 onClick={() => setView("kanban")}
                 className={`flex items-center gap-1 px-2.5 h-7 rounded text-[13px] font-medium transition-colors ${
-                  view === "kanban" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  view === "kanban" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -832,7 +832,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
               <button
                 onClick={() => setView("list")}
                 className={`flex items-center gap-1 px-2.5 h-7 rounded text-[13px] font-medium transition-colors ${
-                  view === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  view === "list" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -884,7 +884,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks..."
                 autoFocus
-                className="w-full pl-8 pr-4 py-2 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-4 py-2 text-[13px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>

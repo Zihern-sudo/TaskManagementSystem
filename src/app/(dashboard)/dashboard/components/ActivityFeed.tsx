@@ -31,7 +31,7 @@ function stripMentions(text: string): string {
 }
 
 const AVATAR_COLORS = [
-  "bg-blue-500", "bg-violet-500", "bg-emerald-500",
+  "bg-indigo-500", "bg-violet-500", "bg-emerald-500",
   "bg-orange-500", "bg-pink-500", "bg-teal-500",
 ];
 
@@ -65,7 +65,7 @@ export default function ActivityFeed({ items }: { items: ActivityItem[] }) {
             <p className="text-[12px] text-slate-500 leading-snug">
               <span className="font-semibold text-slate-700">{item.authorName}</span>
               {" commented on "}
-              <span className="font-medium text-blue-600 truncate">{item.taskTitle}</span>
+              <span className="font-medium text-indigo-600 truncate">{item.taskTitle}</span>
             </p>
             <p className="text-[12px] text-slate-400 mt-0.5 line-clamp-2 leading-snug">
               {stripMentions(item.content)}

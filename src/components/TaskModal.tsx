@@ -24,7 +24,7 @@ function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-const AVATAR_COLORS = ["bg-indigo-500", "bg-blue-500", "bg-purple-500", "bg-pink-500", "bg-teal-500"];
+const AVATAR_COLORS = ["bg-indigo-500", "bg-indigo-500", "bg-purple-500", "bg-pink-500", "bg-teal-500"];
 
 // ── Multi-select Assignee Picker ───────────────────────────────────────────
 
@@ -67,7 +67,7 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white flex items-center justify-between gap-2 min-h-[38px] hover:border-slate-300 transition-colors"
+        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white flex items-center justify-between gap-2 min-h-[38px] hover:border-slate-300 transition-colors"
       >
         <div className="flex items-center gap-1.5 flex-wrap flex-1">
           {selectedUsers.length === 0 ? (
@@ -76,7 +76,7 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
             selectedUsers.map((u, i) => (
               <span
                 key={u.id}
-                className="flex items-center gap-1 bg-blue-50 text-blue-700 text-xs rounded-full px-2 py-0.5"
+                className="flex items-center gap-1 bg-indigo-50 text-indigo-700 text-xs rounded-full px-2 py-0.5"
               >
                 <span
                   className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white overflow-hidden shrink-0`}
@@ -110,7 +110,7 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search members..."
-              className="w-full text-sm px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full text-sm px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoFocus
             />
           </div>
@@ -140,7 +140,7 @@ function AssigneePicker({ users, selected, onChange }: AssigneePickerProps) {
                       <p className="text-xs text-slate-400">{u.email}</p>
                     </div>
                     {checked && (
-                      <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-indigo-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
