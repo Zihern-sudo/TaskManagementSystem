@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { randomBytes } from "crypto";
-import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { Role } from "@prisma/client";
@@ -81,21 +79,16 @@ export async function POST(req: NextRequest) {
     return fail("A user with this email already exists.", 409);
   }
 
-  // ── Create with placeholder password ─────────────────────────────────────
-  // The placeholder can never be matched by bcrypt.compare against real input,
-  // ensuring the account is only accessible after invite acceptance.
-  const placeholderPassword = await bcrypt.hash(
-    randomBytes(32).toString("hex"),
-    12
-  );
-
+  // ── Create user with no password ─────────────────────────────────────────
+  // Password is left null — the login route handles null passwords safely via
+  // a dummy hash comparison. Users gain a real password by accepting an invite
+  // or (for Google SSO users) via the "Set a password" flow in their profile.
   const user = await db.user.create({
     data: {
       fullName: (fullName as string).trim(),
       email: normalizedEmail,
       role: role as Role,
       status: "pending",
-      password: placeholderPassword,
     },
     select: USER_SELECT,
   });

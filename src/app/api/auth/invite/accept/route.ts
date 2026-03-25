@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
     where: { id: user.id },
     data: {
       password: hashedPassword,
+      hasSetPassword: true,
       status: "active",
     },
     select: { id: true, fullName: true, email: true, role: true },
