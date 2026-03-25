@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
+import { Task, TaskPriority, TaskStatus, AssignedUser, CustomFieldDef, PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
 import CommentSection from "./CommentSection";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -15,6 +15,7 @@ interface TaskModalProps {
   onDelete: (id: string) => void;
   currentUserId: string;
   currentUserRole: string;
+  customFieldDefs: CustomFieldDef[];
 }
 
 const STATUSES: TaskStatus[] = ["not_started", "in_progress", "in_review", "completed"];
@@ -175,7 +176,7 @@ function MetaField({ label, children }: { label: string; children: React.ReactNo
 
 // ── Task Modal ─────────────────────────────────────────────────────────────
 
-export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole }: TaskModalProps) {
+export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole, customFieldDefs }: TaskModalProps) {
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "not_started");
@@ -186,6 +187,17 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Custom field values keyed by fieldId
+  const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    if (task?.customFields) {
+      for (const cf of task.customFields) {
+        init[cf.fieldId] = cf.value;
+      }
+    }
+    return init;
+  });
 
   useEffect(() => {
     fetch("/api/users").then((r) => r.json()).then((d) => {
@@ -209,6 +221,10 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
       if (currentUserRole === "admin") {
         body.assigneeIds = assigneeIds;
       }
+      // Custom field values
+      body.customFieldValues = Object.entries(cfValues)
+        .filter(([, v]) => v !== "")
+        .map(([fieldId, value]) => ({ fieldId, value }));
       const res = await fetch(isNew ? "/api/tasks" : `/api/tasks/${task!.id}`, {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -315,6 +331,42 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assignees <span className="text-slate-400 font-normal normal-case">(up to 5)</span></label>
                 <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
               </div>
+
+              {/* Custom fields */}
+              {customFieldDefs.length > 0 && (
+                <div className="space-y-3 pt-1 border-t border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-1">Custom Fields</p>
+                  {customFieldDefs.map((def) => (
+                    <div key={def.id}>
+                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                        {def.label}
+                        {def.required && <span className="text-red-400 ml-1">*</span>}
+                      </label>
+                      {def.type === "picklist" ? (
+                        <select
+                          value={cfValues[def.id] ?? ""}
+                          onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+                        >
+                          <option value="">— Select —</option>
+                          {def.options.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={cfValues[def.id] ?? ""}
+                          onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                          placeholder={`Enter ${def.label.toLowerCase()}…`}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {error && (
                 <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
                   <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
@@ -486,6 +538,41 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   </div>
                 )}
               </MetaField>
+
+              {/* Custom fields */}
+              {customFieldDefs.length > 0 && (
+                <>
+                  <div className="pt-1 border-t border-slate-200">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pt-1">Custom Fields</p>
+                    <div className="space-y-3">
+                      {customFieldDefs.map((def) => (
+                        <MetaField key={def.id} label={`${def.label}${def.required ? " *" : ""}`}>
+                          {def.type === "picklist" ? (
+                            <select
+                              value={cfValues[def.id] ?? ""}
+                              onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
+                            >
+                              <option value="">— Select —</option>
+                              {def.options.map((opt) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type="text"
+                              value={cfValues[def.id] ?? ""}
+                              onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                              placeholder={`Enter ${def.label.toLowerCase()}…`}
+                              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors placeholder-slate-400"
+                            />
+                          )}
+                        </MetaField>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Priority badge preview */}
               <div className="pt-1">
