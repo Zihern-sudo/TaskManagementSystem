@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { decodeSession, SESSION_COOKIE } from "@/lib/session";
+import { db } from "@/lib/db";
 import DashboardShell from "@/components/DashboardShell";
 import { SessionUser } from "@/types";
 
@@ -20,8 +21,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     role: session.role as "admin" | "member",
   };
 
+  const dbUser = await db.user.findUnique({
+    where: { id: session.id },
+    select: { hasSetPassword: true },
+  });
+
   return (
-    <DashboardShell user={user}>
+    <DashboardShell user={user} needsPasswordSetup={dbUser?.hasSetPassword === false}>
       {children}
     </DashboardShell>
   );
