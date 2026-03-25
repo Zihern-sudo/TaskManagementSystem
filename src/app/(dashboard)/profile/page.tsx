@@ -232,8 +232,8 @@ export default function ProfilePage() {
   const [setPassword, setSetPassword] = useState("");
   const [setPasswordConfirm, setSetPasswordConfirm] = useState("");
   const [savingSetPw, setSavingSetPw] = useState(false);
-  const [setPwError, setSetPwError] = useState("");
-  const [setPwSuccess, setSetPwSuccess] = useState(false);
+  const [setPwFormError, setSetPwError] = useState("");
+  const [setPwFormSuccess, setSetPwSuccess] = useState(false);
 
   async function fetchProfile() {
     const res = await fetch("/api/profile");
@@ -593,7 +593,7 @@ export default function ProfilePage() {
             {/* Set password form (Google SSO users with no password yet) */}
             {!profile.hasPassword && (
               <>
-                {setPwSuccess && (
+                {setPwFormSuccess && (
                   <div className="mx-6 mt-4 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-lg border border-green-100">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -633,8 +633,8 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <p className="text-[11px] text-slate-400">Must include uppercase, lowercase, a number, and a special character.</p>
-                    {setPwError && (
-                      <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">{setPwError}</p>
+                    {setPwFormError && (
+                      <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">{setPwFormError}</p>
                     )}
                     <button
                       onClick={handleSetPassword}
@@ -654,7 +654,7 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {!showSetPwForm && !setPwSuccess && (
+                {!showSetPwForm && !setPwFormSuccess && (
                   <div className="px-6 py-4">
                     <p className="text-sm text-slate-400">You signed in with Google. Set a password to also enable email login.</p>
                   </div>
