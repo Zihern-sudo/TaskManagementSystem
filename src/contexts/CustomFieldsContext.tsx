@@ -23,7 +23,7 @@ export function CustomFieldsProvider({ children }: { children: React.ReactNode }
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/custom-fields");
+      const res = await fetch("/api/custom-fields");
       if (!res.ok) return;
       const data = await res.json();
       if (data.data?.fields) setFields(data.data.fields as CustomFieldDef[]);
