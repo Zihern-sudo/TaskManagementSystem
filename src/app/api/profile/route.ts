@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: caller.id },
-    select: { id: true, fullName: true, email: true, role: true, status: true, avatarUrl: true, createdAt: true, password: true },
+    select: { id: true, fullName: true, email: true, role: true, status: true, avatarUrl: true, createdAt: true, password: true, hasSetPassword: true },
   });
   if (!user) return fail("User not found.", 404);
 
@@ -33,12 +33,12 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const { password: _pw, ...userWithoutPassword } = user;
+  const { password: _pw, hasSetPassword: _hsp, ...userWithoutPassword } = user;
 
   return ok("Profile retrieved.", {
     user: {
       ...userWithoutPassword,
-      hasPassword: _pw !== null,
+      hasPassword: user.hasSetPassword,
       createdAt: user.createdAt.toISOString(),
     },
     taskSummary: { total, inProgress, overdue },
@@ -75,13 +75,13 @@ export async function PATCH(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: caller.id },
-    select: { id: true, fullName: true, email: true, password: true, role: true, status: true, createdAt: true },
+    select: { id: true, fullName: true, email: true, password: true, hasSetPassword: true, role: true, status: true, createdAt: true },
   });
   if (!user) return fail("User not found.", 404);
 
   // Verify current password before changing
   if (newPassword) {
-    if (!user.password) {
+    if (!user.hasSetPassword || !user.password) {
       return fail("No password is set on this account. Use the 'Set a Password' option instead.", 400);
     }
     const valid = await bcrypt.compare(currentPassword as string, user.password);
@@ -90,7 +90,10 @@ export async function PATCH(req: NextRequest) {
 
   const updateData: Record<string, unknown> = {};
   if (fullName) updateData.fullName = (fullName as string).trim();
-  if (newPassword) updateData.password = await bcrypt.hash(newPassword as string, 12);
+  if (newPassword) {
+    updateData.password = await bcrypt.hash(newPassword as string, 12);
+    updateData.hasSetPassword = true;
+  }
 
   const updated = await db.user.update({
     where: { id: caller.id },

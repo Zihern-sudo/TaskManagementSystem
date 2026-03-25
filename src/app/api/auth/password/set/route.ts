@@ -35,18 +35,18 @@ export async function POST(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: caller.id },
-    select: { id: true, password: true },
+    select: { id: true, hasSetPassword: true },
   });
   if (!user) return fail("User not found.", 404);
 
-  if (user.password !== null) {
+  if (user.hasSetPassword) {
     return fail("You already have a password. Use the change-password form instead.", 400);
   }
 
   const hashed = await bcrypt.hash(password, 12);
   await db.user.update({
     where: { id: user.id },
-    data: { password: hashed },
+    data: { password: hashed, hasSetPassword: true },
   });
 
   return ok("Password set successfully. You can now log in with your email and password.");
