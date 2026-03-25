@@ -2,12 +2,33 @@ export type TaskStatus = 'not_started' | 'in_progress' | 'in_review' | 'complete
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 export type UserRole = 'admin' | 'member';
 export type AccountStatus = 'pending' | 'invited' | 'active';
+export type FieldType = 'text' | 'picklist';
 
 export interface AssignedUser {
   id: string;
   fullName: string;
   email: string;
   avatarUrl?: string | null;
+}
+
+export interface CustomFieldDef {
+  id: string;
+  label: string;
+  fieldKey: string;
+  type: FieldType;
+  options: string[];
+  required: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskCustomField {
+  fieldId: string;
+  fieldKey: string;
+  label: string;
+  type: FieldType;
+  value: string;
 }
 
 export interface Task {
@@ -18,6 +39,7 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string | null;
   assignees: AssignedUser[];
+  customFields: TaskCustomField[];
   createdAt: string;
   updatedAt: string;
 }

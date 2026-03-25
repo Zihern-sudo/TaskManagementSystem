@@ -24,16 +24,37 @@ export const TASK_SELECT = {
     },
     orderBy: { assignedAt: "asc" as const },
   },
+  customFieldValues: {
+    select: {
+      field: {
+        select: { id: true, label: true, fieldKey: true, type: true, order: true },
+      },
+      value: true,
+    },
+  },
   createdAt: true,
   updatedAt: true,
 } as const;
 
-// Flatten assignees from join table to plain user array
+// Flatten assignees from join table and custom field values to clean shapes
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeTask(task: any) {
+  const { customFieldValues, ...rest } = task;
   return {
-    ...task,
+    ...rest,
     assignees: task.assignees.map((a: { user: unknown }) => a.user),
+    customFields: ((customFieldValues ?? []) as Array<{
+      field: { id: string; label: string; fieldKey: string; type: string; order: number };
+      value: string;
+    }>)
+      .sort((a, b) => (a.field.order ?? 0) - (b.field.order ?? 0))
+      .map((v) => ({
+        fieldId: v.field.id,
+        fieldKey: v.field.fieldKey,
+        label: v.field.label,
+        type: v.field.type,
+        value: v.value,
+      })),
     dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
     createdAt: new Date(task.createdAt).toISOString(),
     updatedAt: new Date(task.updatedAt).toISOString(),
@@ -60,12 +81,13 @@ export async function GET() {
  * Creates a new task.
  *
  * Body:
- *   title        string   (required)
- *   description  string   (optional)
- *   status       TaskStatus   (optional, default: not_started)
- *   priority     TaskPriority (optional, default: medium)
- *   dueDate      ISO date string (optional)
- *   assigneeIds  string[]  (optional, up to 5 user IDs)
+ *   title              string    (required)
+ *   description        string    (optional)
+ *   status             TaskStatus   (optional, default: not_started)
+ *   priority           TaskPriority (optional, default: medium)
+ *   dueDate            ISO date string (optional)
+ *   assigneeIds        string[]  (optional, up to 5 user IDs)
+ *   customFieldValues  { fieldId: string; value: string }[]  (optional)
  */
 export async function POST(req: NextRequest) {
   const caller = getRequestUser(req);
@@ -86,9 +108,10 @@ export async function POST(req: NextRequest) {
     priority,
     dueDate,
     assigneeIds,
+    customFieldValues,
   } = (body ?? {}) as Record<string, unknown>;
 
-  // ── Validate ──────────────────────────────────────────────────────────────
+  // ── Validate core fields ───────────────────────────────────────────────
   const errors: Record<string, string[]> = {};
 
   if (typeof title !== "string" || !title.trim()) {
@@ -121,10 +144,23 @@ export async function POST(req: NextRequest) {
   if (assigneeIds !== undefined && assigneeIds !== null) {
     if (!Array.isArray(assigneeIds)) {
       errors.assigneeIds = ["assigneeIds must be an array of user IDs."];
-    } else if (assigneeIds.length > 5) {
+    } else if ((assigneeIds as unknown[]).length > 5) {
       errors.assigneeIds = ["Maximum 5 assignees allowed."];
     } else {
       ids.push(...(assigneeIds as string[]));
+    }
+  }
+
+  // ── Parse and format-validate custom field values ─────────────────────
+  const cfValues: { fieldId: string; value: string }[] = [];
+  if (customFieldValues !== undefined && Array.isArray(customFieldValues)) {
+    for (const v of customFieldValues as unknown[]) {
+      const entry = v as Record<string, unknown>;
+      if (typeof entry?.fieldId !== "string" || typeof entry?.value !== "string") {
+        errors.customFieldValues = ["Each custom field value must have string fieldId and value."];
+        break;
+      }
+      cfValues.push({ fieldId: entry.fieldId, value: entry.value });
     }
   }
 
@@ -132,7 +168,7 @@ export async function POST(req: NextRequest) {
     return fail("Validation failed.", 422, errors);
   }
 
-  // ── Verify assignees exist ─────────────────────────────────────────────────
+  // ── Verify assignees exist ─────────────────────────────────────────────
   if (ids.length > 0) {
     const found = await db.user.findMany({ where: { id: { in: ids } }, select: { id: true } });
     if (found.length !== ids.length) {
@@ -140,7 +176,41 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Create ────────────────────────────────────────────────────────────────
+  // ── Validate custom fields against schema ─────────────────────────────
+  const allFields = await db.customField.findMany();
+  const fieldMap = new Map(allFields.map((f) => [f.id, f]));
+
+  // Required field check
+  for (const field of allFields) {
+    if (field.required) {
+      const provided = cfValues.find((v) => v.fieldId === field.id);
+      if (!provided || !provided.value.trim()) {
+        errors[`customField_${field.fieldKey}`] = [`${field.label} is required.`];
+      }
+    }
+  }
+
+  // Picklist value check
+  for (const v of cfValues) {
+    const field = fieldMap.get(v.fieldId);
+    if (!field) {
+      errors.customFieldValues = ["One or more custom field IDs are invalid."];
+      break;
+    }
+    if (field.type === "picklist" && v.value.trim() && !field.options.includes(v.value)) {
+      errors[`customField_${field.fieldKey}`] = [
+        `Value for "${field.label}" must be one of: ${field.options.join(", ")}.`,
+      ];
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return fail("Validation failed.", 422, errors);
+  }
+
+  // ── Create task ────────────────────────────────────────────────────────
+  const validCfValues = cfValues.filter((v) => v.value.trim());
+
   const task = await db.task.create({
     data: {
       title: (title as string).trim(),
@@ -149,8 +219,11 @@ export async function POST(req: NextRequest) {
       ...(priority !== undefined && { priority: priority as TaskPriority }),
       ...(parsedDueDate !== undefined && { dueDate: parsedDueDate }),
       ...(ids.length > 0 && {
-        assignees: {
-          create: ids.map((userId) => ({ userId })),
+        assignees: { create: ids.map((userId) => ({ userId })) },
+      }),
+      ...(validCfValues.length > 0 && {
+        customFieldValues: {
+          create: validCfValues.map((v) => ({ fieldId: v.fieldId, value: v.value.trim() })),
         },
       }),
     },
