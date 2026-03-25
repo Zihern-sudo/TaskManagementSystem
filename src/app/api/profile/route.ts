@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: caller.id },
-    select: { id: true, fullName: true, email: true, role: true, status: true, avatarUrl: true, createdAt: true },
+    select: { id: true, fullName: true, email: true, role: true, status: true, avatarUrl: true, createdAt: true, password: true },
   });
   if (!user) return fail("User not found.", 404);
 
@@ -33,9 +33,12 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  const { password: _pw, ...userWithoutPassword } = user;
+
   return ok("Profile retrieved.", {
     user: {
-      ...user,
+      ...userWithoutPassword,
+      hasPassword: _pw !== null,
       createdAt: user.createdAt.toISOString(),
     },
     taskSummary: { total, inProgress, overdue },
@@ -78,6 +81,9 @@ export async function PATCH(req: NextRequest) {
 
   // Verify current password before changing
   if (newPassword) {
+    if (!user.password) {
+      return fail("No password is set on this account. Use the 'Set a Password' option instead.", 400);
+    }
     const valid = await bcrypt.compare(currentPassword as string, user.password);
     if (!valid) return fail("Current password is incorrect.", 400);
   }

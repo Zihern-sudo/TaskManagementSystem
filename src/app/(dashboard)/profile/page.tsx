@@ -12,6 +12,7 @@ interface ProfileData {
   status: string;
   avatarUrl?: string | null;
   createdAt: string;
+  hasPassword: boolean;
 }
 
 interface TaskSummary {
@@ -217,7 +218,7 @@ export default function ProfilePage() {
   const [nameError, setNameError] = useState("");
   const [nameSuccess, setNameSuccess] = useState(false);
 
-  // Change password
+  // Change password (users who already have a password)
   const [showPwForm, setShowPwForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -225,6 +226,14 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
+
+  // Set password (Google SSO users with no password yet)
+  const [showSetPwForm, setShowSetPwForm] = useState(false);
+  const [setPassword, setSetPassword] = useState("");
+  const [setPasswordConfirm, setSetPasswordConfirm] = useState("");
+  const [savingSetPw, setSavingSetPw] = useState(false);
+  const [setPwError, setSetPwError] = useState("");
+  const [setPwSuccess, setSetPwSuccess] = useState(false);
 
   async function fetchProfile() {
     const res = await fetch("/api/profile");
@@ -296,6 +305,41 @@ export default function ProfilePage() {
       setPwError("Network error.");
     } finally {
       setSavingPw(false);
+    }
+  }
+
+  async function handleSetPassword() {
+    setSetPwError("");
+    setSetPwSuccess(false);
+    if (!setPassword || !setPasswordConfirm) {
+      setSetPwError("Both fields are required."); return;
+    }
+    if (setPassword !== setPasswordConfirm) {
+      setSetPwError("Passwords do not match."); return;
+    }
+    const strong = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/.test(setPassword);
+    if (!strong) {
+      setSetPwError("Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character."); return;
+    }
+    setSavingSetPw(true);
+    try {
+      const res = await fetch("/api/auth/password/set", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: setPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSetPwError(data.message || "Failed to set password."); return; }
+      setSetPwSuccess(true);
+      setSetPassword("");
+      setSetPasswordConfirm("");
+      setShowSetPwForm(false);
+      setProfile((prev) => prev ? { ...prev, hasPassword: true } : prev);
+      toast.success("Password set! You can now log in with email and password.");
+    } catch {
+      setSetPwError("Network error.");
+    } finally {
+      setSavingSetPw(false);
     }
   }
 
@@ -449,85 +493,173 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">Password & Security</h3>
-                  <p className="text-[11px] text-slate-400">Update your account password</p>
+                  <p className="text-[11px] text-slate-400">
+                    {profile.hasPassword ? "Update your account password" : "Add a password to enable email login"}
+                  </p>
                 </div>
               </div>
-              <button
-                onClick={() => { setShowPwForm(!showPwForm); setPwError(""); setPwSuccess(false); }}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {showPwForm ? "Cancel" : "Change password"}
-              </button>
+              {profile.hasPassword ? (
+                <button
+                  onClick={() => { setShowPwForm(!showPwForm); setPwError(""); setPwSuccess(false); }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {showPwForm ? "Cancel" : "Change password"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setShowSetPwForm(!showSetPwForm); setSetPwError(""); setSetPwSuccess(false); }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {showSetPwForm ? "Cancel" : "Set a password"}
+                </button>
+              )}
             </div>
 
-            {pwSuccess && (
-              <div className="mx-6 mt-4 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-lg border border-green-100">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Password changed successfully!
-              </div>
-            )}
-
-            {showPwForm && (
-              <div className="px-6 py-5 space-y-4">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Current Password</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Min. 8 characters"
-                    />
+            {/* Change password form (users who already have a password) */}
+            {profile.hasPassword && (
+              <>
+                {pwSuccess && (
+                  <div className="mx-6 mt-4 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Password changed successfully!
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Repeat new password"
-                    />
-                  </div>
-                </div>
-                {pwError && (
-                  <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">{pwError}</p>
                 )}
-                <button
-                  onClick={handleChangePassword}
-                  disabled={savingPw}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition"
-                >
-                  {savingPw ? (
-                    <>
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Updating...
-                    </>
-                  ) : "Update Password"}
-                </button>
-              </div>
+
+                {showPwForm && (
+                  <div className="px-6 py-5 space-y-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Current Password</label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Min. 8 characters"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Repeat new password"
+                        />
+                      </div>
+                    </div>
+                    {pwError && (
+                      <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">{pwError}</p>
+                    )}
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={savingPw}
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition"
+                    >
+                      {savingPw ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Updating...
+                        </>
+                      ) : "Update Password"}
+                    </button>
+                  </div>
+                )}
+
+                {!showPwForm && !pwSuccess && (
+                  <div className="px-6 py-4">
+                    <p className="text-sm text-slate-400">Your password was last set when your account was created.</p>
+                  </div>
+                )}
+              </>
             )}
 
-            {!showPwForm && !pwSuccess && (
-              <div className="px-6 py-4">
-                <p className="text-sm text-slate-400">Your password was last set when your account was created.</p>
-              </div>
+            {/* Set password form (Google SSO users with no password yet) */}
+            {!profile.hasPassword && (
+              <>
+                {setPwSuccess && (
+                  <div className="mx-6 mt-4 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-lg border border-green-100">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Password set! You can now log in with your email and password.
+                  </div>
+                )}
+
+                {showSetPwForm && (
+                  <div className="px-6 py-5 space-y-4">
+                    <div className="flex items-start gap-2 text-[13px] text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
+                      <svg className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Your account currently uses Google Sign-In only. Setting a password lets you also log in with your email and password.
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
+                        <input
+                          type="password"
+                          value={setPassword}
+                          onChange={(e) => setSetPassword(e.target.value)}
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Min. 8 characters"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
+                        <input
+                          type="password"
+                          value={setPasswordConfirm}
+                          onChange={(e) => setSetPasswordConfirm(e.target.value)}
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Repeat password"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Must include uppercase, lowercase, a number, and a special character.</p>
+                    {setPwError && (
+                      <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg border border-red-100">{setPwError}</p>
+                    )}
+                    <button
+                      onClick={handleSetPassword}
+                      disabled={savingSetPw}
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition"
+                    >
+                      {savingSetPw ? (
+                        <>
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Setting password...
+                        </>
+                      ) : "Set Password"}
+                    </button>
+                  </div>
+                )}
+
+                {!showSetPwForm && !setPwSuccess && (
+                  <div className="px-6 py-4">
+                    <p className="text-sm text-slate-400">You signed in with Google. Set a password to also enable email login.</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
