@@ -3,6 +3,7 @@ export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 export type UserRole = 'admin' | 'member';
 export type AccountStatus = 'pending' | 'invited' | 'active';
 export type FieldType = 'text' | 'picklist';
+export type FieldEntity = 'task' | 'user';
 
 export interface AssignedUser {
   id: string;
@@ -16,6 +17,8 @@ export interface CustomFieldDef {
   label: string;
   fieldKey: string;
   type: FieldType;
+  entity: FieldEntity;
+  showInListView: boolean;
   options: string[];
   required: boolean;
   order: number;
@@ -24,6 +27,14 @@ export interface CustomFieldDef {
 }
 
 export interface TaskCustomField {
+  fieldId: string;
+  fieldKey: string;
+  label: string;
+  type: FieldType;
+  value: string;
+}
+
+export interface UserCustomField {
   fieldId: string;
   fieldKey: string;
   label: string;
@@ -108,6 +119,7 @@ export interface User {
   role: UserRole;
   status: AccountStatus;
   avatarUrl?: string | null;
+  customFields: UserCustomField[];
   createdAt: string;
 }
 

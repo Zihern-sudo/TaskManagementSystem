@@ -29,7 +29,9 @@ import {
   PRIORITY_DOT,
   PRIORITY_LABELS,
 } from "@/types";
+import { useCustomFields } from "@/contexts/CustomFieldsContext";
 import TaskModal from "./TaskModal";
+import CustomFieldFormModal from "./CustomFieldFormModal";
 import AvatarGroup from "./AvatarGroup";
 
 interface TaskBoardProps {
@@ -277,11 +279,12 @@ interface ListViewProps {
   currentUserId: string;
   currentUserRole: string;
   exportTrigger: number;
+  listCustomFields: CustomFieldDef[];
 }
 
 const PAGE_SIZE = 10;
 
-function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole, exportTrigger }: ListViewProps) {
+function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole, exportTrigger, listCustomFields }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
@@ -381,6 +384,11 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
             <SortTh field="assignees" label="Assignees" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
             <SortTh field="dueDate" label="Due Date" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
             <SortTh field="createdAt" label="Created" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
+            {listCustomFields.map((cf) => (
+              <th key={cf.id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
+                {cf.label}
+              </th>
+            ))}
             <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -457,6 +465,14 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                 <td className="px-4 py-4 hidden xl:table-cell text-xs text-slate-400 font-medium">
                   {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </td>
+                {listCustomFields.map((cf) => {
+                  const val = task.customFields.find((c) => c.fieldId === cf.id)?.value ?? "";
+                  return (
+                    <td key={cf.id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
+                      {val || <span className="text-slate-300">—</span>}
+                    </td>
+                  );
+                })}
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                     {/* View */}
@@ -589,8 +605,11 @@ function DeleteConfirm({ task, onConfirm, onCancel }: { task: Task; onConfirm: (
 // ── Main TaskBoard ─────────────────────────────────────────────────────────
 
 export default function TaskBoard({ currentUser }: TaskBoardProps) {
+  const { taskFields, refresh: refreshFields } = useCustomFields();
+  const listCustomFields = taskFields.filter((f) => f.showInListView);
+
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>([]);
+  const [showCFModal, setShowCFModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<"kanban" | "list">("kanban");
@@ -633,13 +652,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
     }
   }, []);
 
-  useEffect(() => {
-    fetchTasks();
-    fetch("/api/admin/custom-fields")
-      .then((r) => r.json())
-      .then((d) => { if (d.data?.fields) setCustomFieldDefs(d.data.fields); })
-      .catch(() => null);
-  }, [fetchTasks]);
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   function handleDragStart(event: DragStartEvent) {
     justDragged.current = false;
@@ -876,6 +889,20 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 <span className="hidden sm:inline">New Task</span>
               </button>
             )}
+
+            {/* Create Custom Field — admin only */}
+            {currentUser.role === "admin" && (
+              <button
+                onClick={() => setShowCFModal(true)}
+                title="Create Custom Field"
+                className="hidden sm:flex items-center gap-1.5 h-8 px-3 bg-white hover:bg-slate-50 text-slate-600 text-[13px] font-medium rounded-md border border-slate-200 hover:border-slate-300 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                Custom Field
+              </button>
+            )}
           </div>
         </div>
 
@@ -934,6 +961,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             currentUserId={currentUser.id}
             currentUserRole={currentUser.role}
             exportTrigger={exportTrigger}
+            listCustomFields={listCustomFields}
           />
         )}
       </div>
@@ -948,7 +976,6 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
           onDelete={handleTaskDeleted}
           currentUserId={currentUser.id}
           currentUserRole={currentUser.role}
-          customFieldDefs={customFieldDefs}
         />
       )}
 
@@ -958,6 +985,15 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
           task={deleteTarget}
           onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Custom Field Modal */}
+      {showCFModal && (
+        <CustomFieldFormModal
+          defaultEntity="task"
+          onClose={() => setShowCFModal(false)}
+          onSaved={(_saved) => { refreshFields(); setShowCFModal(false); }}
         />
       )}
     </div>

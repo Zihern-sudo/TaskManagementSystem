@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Task, TaskPriority, TaskStatus, AssignedUser, CustomFieldDef, PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
+import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
+import { useCustomFields } from "@/contexts/CustomFieldsContext";
 import CommentSection from "./CommentSection";
 import ConfirmDialog from "./ConfirmDialog";
 
@@ -15,7 +16,6 @@ interface TaskModalProps {
   onDelete: (id: string) => void;
   currentUserId: string;
   currentUserRole: string;
-  customFieldDefs: CustomFieldDef[];
 }
 
 const STATUSES: TaskStatus[] = ["not_started", "in_progress", "in_review", "completed"];
@@ -176,7 +176,8 @@ function MetaField({ label, children }: { label: string; children: React.ReactNo
 
 // ── Task Modal ─────────────────────────────────────────────────────────────
 
-export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole, customFieldDefs }: TaskModalProps) {
+export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole }: TaskModalProps) {
+  const { taskFields: customFieldDefs } = useCustomFields();
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "not_started");

@@ -2,9 +2,10 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
-import { FieldType } from "@prisma/client";
+import { FieldType, FieldEntity } from "@prisma/client";
 
 const VALID_FIELD_TYPES = Object.values(FieldType);
+const VALID_ENTITIES = Object.values(FieldEntity);
 
 // ── GET /api/admin/custom-fields ───────────────────────────────────────────
 
@@ -29,12 +30,14 @@ export async function GET(req: NextRequest) {
  * Creates a new custom field definition. Admin only.
  *
  * Body:
- *   label     string   (required)
- *   fieldKey  string   (required) — unique slug: lowercase letters, numbers, underscores
- *   type      FieldType (required) — "text" | "picklist"
- *   options   string[] (required when type = "picklist")
- *   required  boolean  (optional, default: false)
- *   order     number   (optional, auto-appended to end if omitted)
+ *   label          string      (required)
+ *   fieldKey       string      (required) — unique slug: lowercase letters, numbers, underscores
+ *   type           FieldType   (required) — "text" | "picklist"
+ *   entity         FieldEntity (optional, default: "task") — "task" | "user"
+ *   showInListView boolean     (optional, default: false)
+ *   options        string[]    (required when type = "picklist")
+ *   required       boolean     (optional, default: false)
+ *   order          number      (optional, auto-appended to end if omitted)
  */
 export async function POST(req: NextRequest) {
   const caller = getRequestUser(req);
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
     return fail("Request body must be valid JSON.");
   }
 
-  const { label, fieldKey, type, options, required, order } = (body ?? {}) as Record<string, unknown>;
+  const { label, fieldKey, type, entity, showInListView, options, required, order } = (body ?? {}) as Record<string, unknown>;
 
   const errors: Record<string, string[]> = {};
 
@@ -64,6 +67,10 @@ export async function POST(req: NextRequest) {
 
   if (!VALID_FIELD_TYPES.includes(type as FieldType)) {
     errors.type = [`Type must be one of: ${VALID_FIELD_TYPES.join(", ")}.`];
+  }
+
+  if (entity !== undefined && !VALID_ENTITIES.includes(entity as FieldEntity)) {
+    errors.entity = [`Entity must be one of: ${VALID_ENTITIES.join(", ")}.`];
   }
 
   if (type === "picklist") {
@@ -93,6 +100,8 @@ export async function POST(req: NextRequest) {
       label: (label as string).trim(),
       fieldKey: fieldKey as string,
       type: type as FieldType,
+      entity: VALID_ENTITIES.includes(entity as FieldEntity) ? (entity as FieldEntity) : "task",
+      showInListView: showInListView === true,
       options: type === "picklist" ? (options as string[]).map((o) => (o as string).trim()) : [],
       required: required === true,
       order: nextOrder,

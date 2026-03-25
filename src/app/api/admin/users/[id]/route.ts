@@ -3,15 +3,21 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { Role, AccountStatus } from "@prisma/client";
+import { USER_SELECT, serializeUser } from "@/app/api/admin/users/route";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ── PATCH /api/admin/users/[id] ────────────────────────────────────────────
 
 /**
- * Update a user's full name, role, and/or status.
+ * Update a user's full name, role, status, and/or custom field values.
  *
- * Body: { fullName?: string; role?: "admin" | "member"; status?: "active" | "pending" }
+ * Body: {
+ *   fullName?:          string
+ *   role?:              "admin" | "member"
+ *   status?:            "active" | "pending"
+ *   customFieldValues?: { fieldId: string; value: string }[]
+ * }
  */
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
@@ -24,11 +30,12 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return fail("Request body must be valid JSON.");
   }
 
-  const { fullName, role, status } = (body ?? {}) as Record<string, unknown>;
+  const data = (body ?? {}) as Record<string, unknown>;
+  const { fullName, role, status, customFieldValues } = data;
 
   // At least one field must be provided
-  if (fullName === undefined && role === undefined && status === undefined) {
-    return fail("Provide at least one field to update: fullName, role, or status.");
+  if (fullName === undefined && role === undefined && status === undefined && customFieldValues === undefined) {
+    return fail("Provide at least one field to update.");
   }
 
   const errors: Record<string, string[]> = {};
@@ -43,6 +50,19 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   if (status !== undefined && status !== "active" && status !== "pending") {
     errors.status = ["Status must be either 'active' or 'pending'."];
+  }
+
+  // Parse custom field values
+  const cfValues: { fieldId: string; value: string }[] = [];
+  if (customFieldValues !== undefined && Array.isArray(customFieldValues)) {
+    for (const v of customFieldValues as unknown[]) {
+      const entry = v as Record<string, unknown>;
+      if (typeof entry?.fieldId !== "string" || typeof entry?.value !== "string") {
+        errors.customFieldValues = ["Each custom field value must have string fieldId and value."];
+        break;
+      }
+      cfValues.push({ fieldId: entry.fieldId, value: entry.value });
+    }
   }
 
   if (Object.keys(errors).length > 0) {
@@ -61,7 +81,20 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return fail("User not found.", 404);
   }
 
-  // ── Update ────────────────────────────────────────────────────────────────
+  // ── Upsert / clear custom field values ───────────────────────────────────
+  for (const v of cfValues) {
+    if (v.value.trim()) {
+      await db.userCustomFieldValue.upsert({
+        where: { userId_fieldId: { userId: id, fieldId: v.fieldId } },
+        create: { userId: id, fieldId: v.fieldId, value: v.value.trim() },
+        update: { value: v.value.trim() },
+      });
+    } else {
+      await db.userCustomFieldValue.deleteMany({ where: { userId: id, fieldId: v.fieldId } });
+    }
+  }
+
+  // ── Update core fields ────────────────────────────────────────────────────
   const updated = await db.user.update({
     where: { id },
     data: {
@@ -69,17 +102,10 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       ...(role !== undefined && { role: role as Role }),
       ...(status !== undefined && { status: status as AccountStatus }),
     },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      role: true,
-      status: true,
-      createdAt: true,
-    },
+    select: USER_SELECT,
   });
 
-  return ok("User updated successfully.", { user: updated });
+  return ok("User updated successfully.", { user: serializeUser(updated) });
 }
 
 // ── DELETE /api/admin/users/[id] ───────────────────────────────────────────
