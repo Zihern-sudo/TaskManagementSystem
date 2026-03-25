@@ -38,6 +38,11 @@ enum TaskPriority {
   critical
 }
 
+enum FieldType {
+  text
+  picklist
+}
+
 // ─────────────────────────────────────────────
 // Models
 // ─────────────────────────────────────────────
@@ -82,8 +87,9 @@ model Task {
   dueDate     DateTime?
 
   // Relations
-  assignees TaskAssignee[]
-  comments  Comment[]
+  assignees         TaskAssignee[]
+  comments          Comment[]
+  customFieldValues TaskCustomFieldValue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -164,4 +170,39 @@ model BoardReaction {
 
   @@unique([commentId, userId, emoji])
   @@map("board_reactions")
+}
+
+// ─────────────────────────────────────────────
+// Custom Fields
+// ─────────────────────────────────────────────
+
+model CustomField {
+  id       String    @id @default(cuid())
+  label    String
+  fieldKey String    @unique
+  type     FieldType
+  options  String[]  @default([])
+  required Boolean   @default(false)
+  order    Int       @default(0)
+
+  values TaskCustomFieldValue[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("custom_fields")
+}
+
+model TaskCustomFieldValue {
+  id    String @id @default(cuid())
+  value String
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  fieldId String
+  field   CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, fieldId])
+  @@map("task_custom_field_values")
 }

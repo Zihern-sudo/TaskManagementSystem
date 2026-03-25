@@ -23,9 +23,10 @@ export async function GET(_req: NextRequest, ctx: RouteContext) {
 /**
  * Updates any combination of a task's fields.
  *
- * Body: Partial<{ title, description, status, priority, dueDate, assigneeIds }>
+ * Body: Partial<{ title, description, status, priority, dueDate, assigneeIds, customFieldValues }>
  * Pass null for description or dueDate to clear the field.
  * Pass [] for assigneeIds to remove all assignees.
+ * Pass customFieldValues to upsert values; empty string value clears that field.
  */
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
@@ -96,6 +97,19 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     errors.assigneeIds = ["Maximum 5 assignees allowed."];
   }
 
+  // Parse custom field values
+  const cfValues: { fieldId: string; value: string }[] = [];
+  if ("customFieldValues" in data && Array.isArray(data.customFieldValues)) {
+    for (const v of data.customFieldValues as unknown[]) {
+      const entry = v as Record<string, unknown>;
+      if (typeof entry?.fieldId !== "string" || typeof entry?.value !== "string") {
+        errors.customFieldValues = ["Each custom field value must have string fieldId and value."];
+        break;
+      }
+      cfValues.push({ fieldId: entry.fieldId, value: entry.value });
+    }
+  }
+
   if (Object.keys(errors).length > 0) {
     return fail("Validation failed.", 422, errors);
   }
@@ -120,6 +134,30 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     }
   }
 
+  // Validate custom field values against schema
+  if (cfValues.length > 0) {
+    const fieldIds = cfValues.map((v) => v.fieldId);
+    const dbFields = await db.customField.findMany({ where: { id: { in: fieldIds } } });
+    const fieldMap = new Map(dbFields.map((f) => [f.id, f]));
+
+    for (const v of cfValues) {
+      const field = fieldMap.get(v.fieldId);
+      if (!field) {
+        errors.customFieldValues = ["One or more custom field IDs are invalid."];
+        break;
+      }
+      if (field.type === "picklist" && v.value.trim() && !field.options.includes(v.value)) {
+        errors[`customField_${field.fieldKey}`] = [
+          `Value for "${field.label}" must be one of: ${field.options.join(", ")}.`,
+        ];
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return fail("Validation failed.", 422, errors);
+    }
+  }
+
   // ── Build update payload ──────────────────────────────────────────────────
   const updateData: Record<string, unknown> = {};
   if ("title" in data) updateData.title = (data.title as string).trim();
@@ -136,6 +174,20 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
         data: ids.map((userId) => ({ taskId: id, userId })),
         skipDuplicates: true,
       });
+    }
+  }
+
+  // Upsert / clear custom field values
+  for (const v of cfValues) {
+    if (v.value.trim()) {
+      await db.taskCustomFieldValue.upsert({
+        where: { taskId_fieldId: { taskId: id, fieldId: v.fieldId } },
+        create: { taskId: id, fieldId: v.fieldId, value: v.value.trim() },
+        update: { value: v.value.trim() },
+      });
+    } else {
+      // Empty string = clear the value
+      await db.taskCustomFieldValue.deleteMany({ where: { taskId: id, fieldId: v.fieldId } });
     }
   }
 
