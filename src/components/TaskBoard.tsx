@@ -22,6 +22,7 @@ import {
   TaskStatus,
   TaskPriority,
   SessionUser,
+  CustomFieldDef,
   STATUS_LABELS,
   STATUS_COLORS,
   PRIORITY_COLORS,
@@ -589,6 +590,7 @@ function DeleteConfirm({ task, onConfirm, onCancel }: { task: Task; onConfirm: (
 
 export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<"kanban" | "list">("kanban");
@@ -631,7 +633,13 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
     }
   }, []);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => {
+    fetchTasks();
+    fetch("/api/admin/custom-fields")
+      .then((r) => r.json())
+      .then((d) => { if (d.data?.fields) setCustomFieldDefs(d.data.fields); })
+      .catch(() => null);
+  }, [fetchTasks]);
 
   function handleDragStart(event: DragStartEvent) {
     justDragged.current = false;
@@ -940,6 +948,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
           onDelete={handleTaskDeleted}
           currentUserId={currentUser.id}
           currentUserRole={currentUser.role}
+          customFieldDefs={customFieldDefs}
         />
       )}
 
