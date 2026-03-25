@@ -44,7 +44,7 @@ function timeAgo(iso: string) {
 
 const AVATAR_COLORS = [
   "bg-indigo-500",
-  "bg-blue-500",
+  "bg-indigo-500",
   "bg-purple-500",
   "bg-pink-500",
   "bg-teal-500",
@@ -98,7 +98,7 @@ function ReactionBar({ commentId, reactions, onReact }: ReactionBarProps) {
           disabled={!!inFlight}
           className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
             r.reacted
-              ? "bg-blue-100 border-blue-300 text-blue-700 font-medium"
+              ? "bg-indigo-100 border-indigo-300 text-indigo-700 font-medium"
               : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
           }`}
         >
@@ -269,13 +269,13 @@ function CommentItem({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={2}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-slate-50"
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={submitEdit}
                   disabled={saving}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
@@ -312,7 +312,7 @@ function CommentItem({
             {!isReply && (
               <button
                 onClick={() => setReplying(!replying)}
-                className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-indigo-600 font-medium transition-colors flex items-center gap-1"
               >
                 <svg
                   className="w-3 h-3"
@@ -356,7 +356,7 @@ function CommentItem({
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors"
+                  className="text-xs text-slate-400 hover:text-indigo-600 font-medium transition-colors"
                 >
                   Edit
                 </button>
@@ -387,13 +387,13 @@ function CommentItem({
               activeUsers={activeUsers}
               rows={2}
               placeholder="Reply... (@ to mention, Enter to post)"
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-gray-50 focus:bg-white"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-gray-50 focus:bg-white"
             />
             <div className="flex flex-col gap-1">
               <button
                 onClick={submitReply}
                 disabled={saving || !replyContent.trim()}
-                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
               >
                 {saving ? "..." : "Send"}
               </button>
@@ -583,7 +583,7 @@ function TaskActivityItem({
                 <span className="text-sm font-semibold text-slate-900 shrink-0">
                   {tc.author.fullName}
                 </span>
-                <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 truncate max-w-[180px]">
+                <span className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 truncate max-w-[180px]">
                   <svg
                     className="w-2.5 h-2.5 shrink-0"
                     fill="none"
@@ -619,13 +619,13 @@ function TaskActivityItem({
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   rows={2}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50"
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-slate-50"
                 />
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={submitEdit}
                     disabled={saving}
-                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save"}
                   </button>
@@ -650,7 +650,7 @@ function TaskActivityItem({
               {/* Reply — available to everyone */}
               <button
                 onClick={handleReplyButtonClick}
-                className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-indigo-600 font-medium transition-colors flex items-center gap-1"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -678,7 +678,7 @@ function TaskActivityItem({
                 <>
                   <button
                     onClick={() => setEditing(true)}
-                    className="text-xs text-slate-400 hover:text-blue-600 font-medium transition-colors"
+                    className="text-xs text-slate-400 hover:text-indigo-600 font-medium transition-colors"
                   >
                     Edit
                   </button>
@@ -748,13 +748,13 @@ function TaskActivityItem({
                 activeUsers={activeUsers}
                 rows={2}
                 placeholder="Reply... (Enter to post)"
-                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50 focus:bg-white"
+                className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-slate-50 focus:bg-white"
               />
               <div className="flex flex-col gap-1">
                 <button
                   onClick={submitReply}
                   disabled={saving || !replyContent.trim()}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                  className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
                 >
                   {saving ? "..." : "Send"}
                 </button>

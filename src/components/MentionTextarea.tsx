@@ -12,7 +12,7 @@ export interface ActiveUser {
 }
 
 const AVATAR_COLORS = [
-  "bg-indigo-500", "bg-blue-500", "bg-purple-500",
+  "bg-indigo-500", "bg-indigo-500", "bg-purple-500",
   "bg-pink-500", "bg-teal-500", "bg-orange-500",
 ];
 
@@ -210,7 +210,7 @@ export function MentionTextarea({
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
                   i === highlightedIndex
-                    ? "bg-blue-50 text-blue-700"
+                    ? "bg-indigo-50 text-indigo-700"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
@@ -284,7 +284,7 @@ export function renderMentions(content: string, activeUsers: ActiveUser[]) {
     parts.push(
       <span
         key={`m-${match.index}`}
-        className="inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-tight"
+        className="inline-flex items-center bg-indigo-100 text-indigo-700 rounded-full px-1.5 py-0.5 text-xs font-semibold leading-tight"
       >
         @{match[1]}
       </span>

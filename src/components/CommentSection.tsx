@@ -87,7 +87,7 @@ function CommentItem({
   return (
     <>
     <div className="flex gap-3">
-      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
+      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
         {getInitials(comment.author.fullName)}
       </div>
       <div className="flex-1 min-w-0">
@@ -106,13 +106,13 @@ function CommentItem({
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
               <div className="flex gap-2 mt-2">
                 <button
                   onClick={submitEdit}
                   disabled={saving}
-                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
@@ -140,7 +140,7 @@ function CommentItem({
             {!comment.parentId && (
               <button
                 onClick={() => setReplying(!replying)}
-                className="text-xs text-gray-500 hover:text-blue-600 font-medium transition-colors"
+                className="text-xs text-gray-500 hover:text-indigo-600 font-medium transition-colors"
               >
                 Reply
               </button>
@@ -149,7 +149,7 @@ function CommentItem({
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="text-xs text-gray-500 hover:text-blue-600 font-medium transition-colors"
+                  className="text-xs text-gray-500 hover:text-indigo-600 font-medium transition-colors"
                 >
                   Edit
                 </button>
@@ -180,13 +180,13 @@ function CommentItem({
               activeUsers={activeUsers}
               rows={2}
               placeholder="Write a reply... (@ to mention, Enter to post)"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
             <div className="flex flex-col gap-1">
               <button
                 onClick={submitReply}
                 disabled={saving || !replyContent.trim()}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50"
               >
                 {saving ? "..." : "Send"}
               </button>
@@ -333,7 +333,7 @@ export default function CommentSection({
     return (
       <div className="flex items-center justify-center py-10">
         <svg
-          className="w-5 h-5 animate-spin text-blue-500"
+          className="w-5 h-5 animate-spin text-indigo-500"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -376,7 +376,7 @@ export default function CommentSection({
 
       {/* New comment input */}
       <div className="flex gap-3">
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
+        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5">
           Me
         </div>
         <div className="flex-1">
@@ -393,7 +393,7 @@ export default function CommentSection({
             activeUsers={activeUsers}
             rows={2}
             placeholder="Add a comment... (@ to mention, Enter to post)"
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-gray-400">
@@ -406,7 +406,7 @@ export default function CommentSection({
             <button
               onClick={handlePost}
               disabled={posting || !newComment.trim()}
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-medium rounded-lg transition-colors"
             >
               {posting ? "Posting..." : "Post"}
             </button>

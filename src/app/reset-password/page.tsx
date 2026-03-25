@@ -70,7 +70,7 @@ function ResetPasswordForm() {
           <div className="px-8 pt-8 pb-10">
             {/* Logo */}
             <div className="flex items-center gap-2.5 mb-8">
-              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
@@ -110,7 +110,7 @@ function ResetPasswordForm() {
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition"
+                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition"
                         placeholder="Min. 8 characters"
                         required
                         autoFocus
@@ -131,7 +131,7 @@ function ResetPasswordForm() {
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 transition"
+                        className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 transition"
                         placeholder="Repeat your new password"
                         required
                         disabled={!token}
@@ -183,14 +183,14 @@ function ResetPasswordForm() {
 
                 <p className="mt-6 text-center text-xs text-gray-400">
                   Remembered it?{" "}
-                  <a href="/login" className="text-blue-600 font-medium hover:underline">Back to sign in</a>
+                  <a href="/login" className="text-indigo-600 font-medium hover:underline">Back to sign in</a>
                 </p>
               </>
             )}
           </div>
         </div>
 
-        <p className="text-center text-blue-300 text-xs mt-6 opacity-70">
+        <p className="text-center text-indigo-300 text-xs mt-6 opacity-70">
           Secure • Fast • Built for teams
         </p>
       </div>

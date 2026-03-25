@@ -125,7 +125,7 @@ function AvatarUpload({
       {/* Drop zone */}
       <div
         className={`relative w-24 h-24 rounded-xl cursor-pointer transition-all group border-2 border-dashed
-          ${dragOver ? "border-blue-500 bg-blue-50 scale-105" : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"}`}
+          ${dragOver ? "border-indigo-500 bg-indigo-50 scale-105" : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
@@ -161,7 +161,7 @@ function AvatarUpload({
       </div>
 
       <p className="text-xs text-gray-400 text-center leading-tight">
-        Drag photo here or <span className="text-blue-500 underline cursor-pointer" onClick={() => inputRef.current?.click()}>browse</span>
+        Drag photo here or <span className="text-indigo-500 underline cursor-pointer" onClick={() => inputRef.current?.click()}>browse</span>
         <br />JPG, PNG, WebP · max 2MB
       </p>
 
@@ -175,7 +175,7 @@ function AvatarUpload({
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg transition"
           >
             {uploading ? (
               <>
@@ -346,7 +346,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 gap-3 text-gray-400">
-        <svg className="w-5 h-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 animate-spin text-indigo-500" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize border ${
-                    profile.role === "admin" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
+                    profile.role === "admin" ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-gray-100 text-gray-600 border-gray-200"
                   }`}>
                     {profile.role}
                   </span>
@@ -407,7 +407,7 @@ export default function ProfilePage() {
                   </div>
                   <button
                     onClick={() => { setEditName(true); setFullName(profile.fullName); setNameError(""); }}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors border border-slate-200 hover:border-blue-300"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors border border-slate-200 hover:border-indigo-300"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   {nameError && (
@@ -433,7 +433,7 @@ export default function ProfilePage() {
                     <button
                       onClick={handleSaveName}
                       disabled={savingName}
-                      className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg flex items-center gap-2 transition"
+                      className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg flex items-center gap-2 transition"
                     >
                       {savingName ? (
                         <>
@@ -470,7 +470,7 @@ export default function ProfilePage() {
           {taskSummary && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: "Assigned Tasks", value: taskSummary.total, color: "text-blue-600", bg: "bg-blue-50", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+                { label: "Assigned Tasks", value: taskSummary.total, color: "text-indigo-600", bg: "bg-indigo-50", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { label: "In Progress", value: taskSummary.inProgress, color: "text-indigo-600", bg: "bg-indigo-50", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
                 { label: "Overdue", value: taskSummary.overdue, color: "text-red-600", bg: "bg-red-50", icon: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
               ].map((stat) => (
@@ -501,14 +501,14 @@ export default function ProfilePage() {
               {profile.hasPassword ? (
                 <button
                   onClick={() => { setShowPwForm(!showPwForm); setPwError(""); setPwSuccess(false); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >
                   {showPwForm ? "Cancel" : "Change password"}
                 </button>
               ) : (
                 <button
                   onClick={() => { setShowSetPwForm(!showSetPwForm); setSetPwError(""); setSetPwSuccess(false); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >
                   {showSetPwForm ? "Cancel" : "Set a password"}
                 </button>
@@ -535,7 +535,7 @@ export default function ProfilePage() {
                         type="password"
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder="••••••••"
                       />
                     </div>
@@ -546,7 +546,7 @@ export default function ProfilePage() {
                           type="password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           placeholder="Min. 8 characters"
                         />
                       </div>
@@ -556,7 +556,7 @@ export default function ProfilePage() {
                           type="password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           placeholder="Repeat new password"
                         />
                       </div>
@@ -567,7 +567,7 @@ export default function ProfilePage() {
                     <button
                       onClick={handleChangePassword}
                       disabled={savingPw}
-                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition"
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl transition"
                     >
                       {savingPw ? (
                         <>
@@ -604,8 +604,8 @@ export default function ProfilePage() {
 
                 {showSetPwForm && (
                   <div className="px-6 py-5 space-y-4">
-                    <div className="flex items-start gap-2 text-[13px] text-slate-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5">
-                      <svg className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-start gap-2 text-[13px] text-slate-500 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5">
+                      <svg className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Your account currently uses Google Sign-In only. Setting a password lets you also log in with your email and password.
@@ -617,7 +617,7 @@ export default function ProfilePage() {
                           type="password"
                           value={setPassword}
                           onChange={(e) => setSetPassword(e.target.value)}
-                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           placeholder="Min. 8 characters"
                         />
                       </div>
@@ -627,7 +627,7 @@ export default function ProfilePage() {
                           type="password"
                           value={setPasswordConfirm}
                           onChange={(e) => setSetPasswordConfirm(e.target.value)}
-                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full border border-slate-200 rounded-md px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           placeholder="Repeat password"
                         />
                       </div>
@@ -639,7 +639,7 @@ export default function ProfilePage() {
                     <button
                       onClick={handleSetPassword}
                       disabled={savingSetPw}
-                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition"
+                      className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl transition"
                     >
                       {savingSetPw ? (
                         <>
