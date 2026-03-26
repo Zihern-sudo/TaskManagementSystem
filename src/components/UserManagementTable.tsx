@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { User, UserRole, AccountStatus } from "@/types";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useCustomFields } from "@/contexts/CustomFieldsContext";
+import { useFieldLayout } from "@/context/FieldLayoutContext";
 import CustomFieldFormModal from "@/components/CustomFieldFormModal";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const STATUS_STYLES: Record<AccountStatus, string> = {
   active: "bg-green-50 text-green-700 border-green-200",
@@ -78,6 +82,29 @@ function SortTh({
         </span>
       </div>
     </th>
+  );
+}
+
+// ── User list system field metadata ────────────────────────────────────────
+
+const USER_SYSTEM_FIELD_META: Record<string, { label: string; sortField: SortField; colClass: string }> = {
+  role:       { label: "Role",   sortField: "role",      colClass: "hidden md:table-cell" },
+  status:     { label: "Status", sortField: "status",    colClass: "hidden lg:table-cell" },
+  created_at: { label: "Joined", sortField: "createdAt", colClass: "hidden xl:table-cell" },
+};
+
+function SortableColItem({ id, label }: { id: string; label: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 shadow-sm select-none">
+      <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 touch-none shrink-0">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <span className="flex-1 truncate">{label}</span>
+    </div>
   );
 }
 
@@ -260,8 +287,12 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 
 export default function UserManagementTable() {
   const { userFields, refresh: refreshFields } = useCustomFields();
+  const { userListLayout, saveUserListLayout, refresh: refreshLayout } = useFieldLayout();
   const listCustomFields = userFields.filter((f) => f.showInListView);
   const [showCFModal, setShowCFModal] = useState(false);
+  const [isCustomizingCols, setIsCustomizingCols] = useState(false);
+  const [localColLayout, setLocalColLayout] = useState<string[]>([]);
+  const [savingColLayout, setSavingColLayout] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -381,6 +412,20 @@ export default function UserManagementTable() {
 
   // Stats
   const activeCount = users.filter((u) => u.status === "active").length;
+
+  // Visible columns = system fields + showInListView user custom fields, in layout order
+  const visibleUserListLayout = userListLayout.filter((id) => {
+    if (USER_SYSTEM_FIELD_META[id]) return true;
+    const cf = userFields.find((f) => f.id === id);
+    return cf?.showInListView === true;
+  });
+
+  const totalCols = 2 + visibleUserListLayout.length + 1; // # + User + reorderable + Actions
+
+  function getColLabel(id: string): string {
+    if (USER_SYSTEM_FIELD_META[id]) return USER_SYSTEM_FIELD_META[id].label;
+    return userFields.find((f) => f.id === id)?.label ?? id;
+  }
   const invitedCount = users.filter((u) => u.status === "invited").length;
   const pendingCount = users.filter((u) => u.status === "pending").length;
 
@@ -549,27 +594,101 @@ export default function UserManagementTable() {
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Top accent bar */}
             <div className="h-1" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)" }} />
+
+            {/* Column customizer panel */}
+            {isCustomizingCols ? (
+              <div className="p-4 border-b border-slate-100 bg-slate-50/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reorder Columns</p>
+                  <p className="text-xs text-slate-400"># and User are always first · Actions is always last</p>
+                </div>
+                <DndContext
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event: DragEndEvent) => {
+                    const { active, over } = event;
+                    if (over && active.id !== over.id) {
+                      setLocalColLayout((prev) => {
+                        const oldIndex = prev.indexOf(active.id as string);
+                        const newIndex = prev.indexOf(over.id as string);
+                        return arrayMove(prev, oldIndex, newIndex);
+                      });
+                    }
+                  }}
+                >
+                  <SortableContext items={localColLayout} strategy={verticalListSortingStrategy}>
+                    <div className="flex flex-wrap gap-1.5">
+                      {localColLayout.map((id) => (
+                        <SortableColItem key={id} id={id} label={getColLabel(id)} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      setSavingColLayout(true);
+                      const nonVisible = userListLayout.filter((id) => !localColLayout.includes(id));
+                      await saveUserListLayout([...localColLayout, ...nonVisible]);
+                      setSavingColLayout(false);
+                      setIsCustomizingCols(false);
+                      toast.success("Column layout saved.");
+                    }}
+                    disabled={savingColLayout}
+                    className="px-4 py-1.5 text-sm font-bold text-white rounded-lg disabled:opacity-50"
+                    style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                  >
+                    {savingColLayout ? "Saving…" : "Save Layout"}
+                  </button>
+                  <button
+                    onClick={() => setIsCustomizingCols(false)}
+                    className="px-4 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-end px-4 py-2 border-b border-slate-100">
+                <button
+                  onClick={() => { setLocalColLayout([...visibleUserListLayout]); setIsCustomizingCols(true); }}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  Reorder Columns
+                </button>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[480px]">
               <thead>
                 <tr className="border-b-2 border-slate-100 bg-gradient-to-b from-slate-50 to-white">
                   <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
                   <SortTh field="fullName" label="User" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh field="role" label="Role" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-                  <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
-                  <SortTh field="createdAt" label="Joined" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-                  {listCustomFields.map((cf) => (
-                    <th key={cf.id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
-                      {cf.label}
-                    </th>
-                  ))}
+                  {visibleUserListLayout.map((id) => {
+                    const sys = USER_SYSTEM_FIELD_META[id];
+                    if (sys) {
+                      return (
+                        <SortTh key={id} field={sys.sortField} label={sys.label} sortField={sortField} sortDir={sortDir} onSort={handleSort} className={sys.colClass} />
+                      );
+                    }
+                    const cf = userFields.find((f) => f.id === id);
+                    if (!cf) return null;
+                    return (
+                      <th key={id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
+                        {cf.label}
+                      </th>
+                    );
+                  })}
                   <th className="text-right px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-20">
+                    <td colSpan={totalCols} className="text-center py-20">
                       <div className="flex flex-col items-center gap-4 text-slate-400">
                         <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
                           <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -607,24 +726,39 @@ export default function UserManagementTable() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 hidden md:table-cell">
-                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize ${ROLE_STYLES[user.role]}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 hidden lg:table-cell">
-                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize gap-1.5 w-fit ${STATUS_STYLES[user.status]}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOTS[user.status]}`} />
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 hidden xl:table-cell text-slate-400 text-xs font-medium">
-                        {formatDate(user.createdAt)}
-                      </td>
-                      {listCustomFields.map((cf) => {
-                        const val = user.customFields?.find((c) => c.fieldId === cf.id)?.value ?? "";
+                      {visibleUserListLayout.map((id) => {
+                        if (id === "role") {
+                          return (
+                            <td key="role" className="px-4 py-4 hidden md:table-cell">
+                              <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize ${ROLE_STYLES[user.role]}`}>
+                                {user.role}
+                              </span>
+                            </td>
+                          );
+                        }
+                        if (id === "status") {
+                          return (
+                            <td key="status" className="px-4 py-4 hidden lg:table-cell">
+                              <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border capitalize gap-1.5 w-fit ${STATUS_STYLES[user.status]}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${STATUS_DOTS[user.status]}`} />
+                                {user.status}
+                              </span>
+                            </td>
+                          );
+                        }
+                        if (id === "created_at") {
+                          return (
+                            <td key="created_at" className="px-4 py-4 hidden xl:table-cell text-slate-400 text-xs font-medium">
+                              {formatDate(user.createdAt)}
+                            </td>
+                          );
+                        }
+                        // Custom user field
+                        const cf = userFields.find((f) => f.id === id);
+                        if (!cf) return null;
+                        const val = user.customFields?.find((c) => c.fieldId === id)?.value ?? "";
                         return (
-                          <td key={cf.id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
+                          <td key={id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
                             {val || <span className="text-slate-300">—</span>}
                           </td>
                         );
@@ -744,7 +878,7 @@ export default function UserManagementTable() {
         <CustomFieldFormModal
           defaultEntity="user"
           onClose={() => setShowCFModal(false)}
-          onSaved={(_saved) => { refreshFields(); setShowCFModal(false); }}
+          onSaved={(_saved) => { refreshFields(); refreshLayout(); setShowCFModal(false); }}
         />
       )}
     </div>

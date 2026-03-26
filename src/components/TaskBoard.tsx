@@ -446,7 +446,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
         <div className="p-4 border-b border-slate-100 bg-slate-50/80 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reorder Columns</p>
-            <p className="text-xs text-slate-400"># and Title are always first · Actions is always last</p>
+            <p className="text-xs text-slate-400"># and Title are always first · Actions last · your personal layout</p>
           </div>
           <DndContext
             collisionDetection={closestCenter}
@@ -494,7 +494,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
             </button>
           </div>
         </div>
-      ) : currentUserRole === "admin" && (
+      ) : (
         <div className="flex items-center justify-end px-4 py-2 border-b border-slate-100">
           <button
             onClick={() => { setLocalColLayout([...visibleListLayout]); setIsCustomizingCols(true); }}

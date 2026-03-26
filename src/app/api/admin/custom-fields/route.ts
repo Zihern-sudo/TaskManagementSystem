@@ -8,8 +8,9 @@ import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS } from "@/app/api/admin/setting
 const VALID_FIELD_TYPES = Object.values(FieldType);
 const VALID_ENTITIES = Object.values(FieldEntity);
 
-const MODAL_LAYOUT_KEY = "task_modal_layout";
-const LIST_LAYOUT_KEY = "task_list_layout";
+function userLayoutKey(userId: string, surface: "task_modal" | "task_list"): string {
+  return `user_layout:${userId}:${surface}`;
+}
 
 // ── GET /api/admin/custom-fields ───────────────────────────────────────────
 
@@ -113,12 +114,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // ── Update layout settings to insert new field at the chosen position ──
+  // ── Update the creating admin's personal layout with the chosen position ──
   if (field.entity === "task") {
     const insertAfterId = typeof insertAfter === "string" ? insertAfter : null;
+    const modalKey = userLayoutKey(caller.id, "task_modal");
+    const listKey = userLayoutKey(caller.id, "task_list");
 
-    await updateLayoutWithNewField(MODAL_LAYOUT_KEY, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId);
-    await updateLayoutWithNewField(LIST_LAYOUT_KEY, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId);
+    await updateLayoutWithNewField(modalKey, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId);
+    await updateLayoutWithNewField(listKey, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId);
   }
 
   return ok("Custom field created successfully.", { field }, 201);
