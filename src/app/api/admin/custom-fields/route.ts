@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType, FieldEntity } from "@prisma/client";
-import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS } from "@/app/api/admin/settings/field-layout/route";
+import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS } from "@/app/api/settings/field-layout/route";
 
 const VALID_FIELD_TYPES = Object.values(FieldType);
 const VALID_ENTITIES = Object.values(FieldEntity);

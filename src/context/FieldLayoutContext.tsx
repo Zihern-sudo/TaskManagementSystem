@@ -33,7 +33,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/settings/field-layout");
+      const res = await fetch("/api/settings/field-layout");
       if (res.ok) {
         const json = await res.json();
         setModalLayout(json.data?.modalLayout ?? []);
@@ -46,7 +46,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const saveModalLayout = useCallback(async (layout: string[]) => {
-    await fetch("/api/admin/settings/field-layout", {
+    await fetch("/api/settings/field-layout", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modalLayout: layout }),
@@ -55,7 +55,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const saveListLayout = useCallback(async (layout: string[]) => {
-    await fetch("/api/admin/settings/field-layout", {
+    await fetch("/api/settings/field-layout", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ listLayout: layout }),
@@ -64,7 +64,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const saveUserListLayout = useCallback(async (layout: string[]) => {
-    await fetch("/api/admin/settings/field-layout", {
+    await fetch("/api/settings/field-layout", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userListLayout: layout }),
