@@ -45,8 +45,16 @@ export async function syncParentStatus(parentId: string) {
     if (parent.status === "not_started" || parent.status === "in_review") {
       await db.task.update({ where: { id: parentId }, data: { status: "in_progress" } });
     }
+  } else {
+    // completedCount === 0 — all subtasks unchecked (including the edge case where
+    // there is only 1 subtask and it gets unchecked, going from 1/1 → 0/1).
+    // If the parent was auto-advanced to "in_review" (all were done), roll it back
+    // to "in_progress" now that no subtasks are complete.
+    // Leave "not_started", "in_progress", and "completed" untouched.
+    if (parent.status === "in_review") {
+      await db.task.update({ where: { id: parentId }, data: { status: "in_progress" } });
+    }
   }
-  // completedCount === 0 → no-op; manual control fully preserved
 }
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -110,6 +118,13 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     errors.priority = [`Priority must be one of: ${VALID_PRIORITIES.join(", ")}.`];
   }
 
+  // Fetch the existing task early so due-date validation can compare against the stored value
+  const existing = await db.task.findUnique({
+    where: { id },
+    select: { id: true, parentId: true, dueDate: true, assignees: { select: { userId: true } } },
+  });
+  if (!existing) return fail("Task not found.", 404);
+
   let parsedDueDate: Date | null | undefined;
   if ("dueDate" in data) {
     if (data.dueDate === null) {
@@ -119,10 +134,22 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
       if (isNaN(parsedDueDate.getTime())) {
         errors.dueDate = ["dueDate must be a valid ISO date string or null."];
       } else {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (parsedDueDate < today) {
-          errors.dueDate = ["Due date cannot be in the past."];
+        // Only reject a past date when the user is setting a NEW date.
+        // If the submitted date matches what is already stored (e.g. the due date
+        // simply elapsed while the task was open), allow saving other fields without
+        // forcing the user to clear the date first.
+        const existingDateStr = existing.dueDate
+          ? new Date(existing.dueDate).toISOString().slice(0, 10)
+          : null;
+        const submittedDateStr = parsedDueDate.toISOString().slice(0, 10);
+        const isChangingDate = submittedDateStr !== existingDateStr;
+
+        if (isChangingDate) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (parsedDueDate < today) {
+            errors.dueDate = ["Due date cannot be in the past."];
+          }
         }
       }
     }
@@ -157,12 +184,6 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   if (Object.keys(errors).length > 0) {
     return fail("Validation failed.", 422, errors);
   }
-
-  const existing = await db.task.findUnique({
-    where: { id },
-    select: { id: true, parentId: true, assignees: { select: { userId: true } } },
-  });
-  if (!existing) return fail("Task not found.", 404);
 
   // Members can only edit tasks they are assigned to
   if (caller.role !== "admin") {
