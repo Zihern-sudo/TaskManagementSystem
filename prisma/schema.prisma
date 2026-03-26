@@ -229,3 +229,17 @@ model UserCustomFieldValue {
   @@unique([userId, fieldId])
   @@map("user_custom_field_values")
 }
+
+// ─────────────────────────────────────────────
+// Task List View Column Order
+// ─────────────────────────────────────────────
+
+model TaskListColumnOrder {
+  id         String  @id @default(cuid())
+  /// "title" | "status" | "priority" | "assignees" | "dueDate" | "createdAt" | "cf_<fieldId>"
+  columnKey  String  @unique
+  order      Int
+  visible    Boolean @default(true)
+
+  @@map("task_list_column_orders")
+}

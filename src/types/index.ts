@@ -124,6 +124,25 @@ export interface User {
 }
 
 
+// ── Column order ───────────────────────────────────────────────────────────
+
+export interface ColumnConfig {
+  columnKey: string;   // system key ("title" etc.) or "cf_<fieldId>" for custom
+  label: string;
+  order: number;
+  visible: boolean;
+}
+
+/** The fixed system columns, in their default order. */
+export const SYSTEM_COLUMNS: Omit<ColumnConfig, "order">[] = [
+  { columnKey: "title",     label: "Title",     visible: true },
+  { columnKey: "status",    label: "Status",    visible: true },
+  { columnKey: "priority",  label: "Priority",  visible: true },
+  { columnKey: "assignees", label: "Assignees", visible: true },
+  { columnKey: "dueDate",   label: "Due Date",  visible: true },
+  { columnKey: "createdAt", label: "Created",   visible: true },
+];
+
 export interface SessionUser {
   id: string;
   email: string;
