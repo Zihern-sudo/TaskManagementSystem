@@ -12,6 +12,8 @@ interface SubtaskListProps {
   currentUserRole: string;
   /** Called when a subtask is created, updated, or deleted so the parent can refresh */
   onSubtasksChange: (updatedSubtasks: Subtask[], completedCount: number) => void;
+  /** Called after a subtask status change triggers a server-side parent status rollup */
+  onParentStatusChange?: (newStatus: TaskStatus) => void;
 }
 
 const STATUSES: TaskStatus[] = ["not_started", "in_progress", "in_review", "completed"];
@@ -226,6 +228,7 @@ export default function SubtaskList({
   completedSubtaskCount: initialCompleted,
   currentUserRole,
   onSubtasksChange,
+  onParentStatusChange,
 }: SubtaskListProps) {
   const [subtasks, setSubtasks] = useState<Subtask[]>(initialSubtasks);
   const [completedCount, setCompletedCount] = useState(initialCompleted);
@@ -247,8 +250,20 @@ export default function SubtaskList({
     setShowAddForm(false);
   }
 
-  function handleStatusChange(id: string, status: TaskStatus) {
+  async function handleStatusChange(id: string, status: TaskStatus) {
     updateAndNotify(subtasks.map((s) => (s.id === id ? { ...s, status } : s)));
+    // Fetch the parent's status after syncParentStatus has run server-side
+    if (onParentStatusChange) {
+      try {
+        const res = await fetch(`/api/tasks/${parentTaskId}`);
+        if (res.ok) {
+          const data = await res.json();
+          onParentStatusChange(data.data.task.status);
+        }
+      } catch {
+        // Non-critical — modal status may be stale until reopened
+      }
+    }
   }
 
   function handleDelete(id: string) {
