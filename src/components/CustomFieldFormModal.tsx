@@ -82,6 +82,19 @@ export default function CustomFieldFormModal({
     setOptionRows((prev) => prev.filter((r) => r.localId !== localId));
   }
 
+  function moveOption(localId: string, direction: "up" | "down") {
+    setOptionRows((prev) => {
+      const idx = prev.findIndex((r) => r.localId === localId);
+      if (idx === -1) return prev;
+      if (direction === "up" && idx === 0) return prev;
+      if (direction === "down" && idx === prev.length - 1) return prev;
+      const next = [...prev];
+      const target = direction === "up" ? idx - 1 : idx + 1;
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  }
+
   // ── Compute renames + removed (edit + picklist) ───────────────────────────
   function computeRenames(): Record<string, string> {
     const renames: Record<string, string> = {};
@@ -431,6 +444,8 @@ export default function CustomFieldFormModal({
                   {optionRows.map((row, idx) => {
                     const isRenamed = row.original !== null && row.value.trim() !== row.original;
                     const isEmpty = !row.value.trim();
+                    const isFirst = idx === 0;
+                    const isLast = idx === optionRows.length - 1;
                     return (
                       <div key={row.localId} className="flex items-center gap-2 group">
                         <span className="text-[11px] text-slate-300 w-5 text-right shrink-0">{idx + 1}.</span>
@@ -453,9 +468,32 @@ export default function CustomFieldFormModal({
                             rename
                           </span>
                         )}
-                        {row.original !== null && !isRenamed && (
-                          <span className="w-14 shrink-0" /> /* spacer to align remove button */
-                        )}
+                        {/* Move up / down */}
+                        <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => moveOption(row.localId, "up")}
+                            disabled={isFirst}
+                            title="Move up"
+                            className="p-0.5 text-slate-300 hover:text-indigo-500 disabled:opacity-0 disabled:pointer-events-none rounded transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveOption(row.localId, "down")}
+                            disabled={isLast}
+                            title="Move down"
+                            className="p-0.5 text-slate-300 hover:text-indigo-500 disabled:opacity-0 disabled:pointer-events-none rounded transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                        {/* Remove */}
                         <button
                           type="button"
                           onClick={() => removeOption(row.localId)}
