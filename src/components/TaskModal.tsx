@@ -7,6 +7,8 @@ import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, PRIORITY
 import { useCustomFields } from "@/contexts/CustomFieldsContext";
 import CommentSection from "./CommentSection";
 import ConfirmDialog from "./ConfirmDialog";
+import SubtaskList from "./SubtaskList";
+import { Subtask } from "@/types";
 
 interface TaskModalProps {
   task: Task | null;
@@ -188,6 +190,8 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? []);
+  const [completedSubtaskCount, setCompletedSubtaskCount] = useState(task?.completedSubtaskCount ?? 0);
 
   // Custom field values keyed by fieldId
   const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
@@ -471,6 +475,23 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   placeholder="Add a description…"
                 />
               </div>
+
+              {/* Subtasks — only on top-level tasks (no parentId) */}
+              {!task?.parentId && (
+                <div className="border-t border-slate-100 pt-4">
+                  <SubtaskList
+                    parentTaskId={task!.id}
+                    subtasks={subtasks}
+                    subtaskCount={subtasks.length}
+                    completedSubtaskCount={completedSubtaskCount}
+                    currentUserRole={currentUserRole}
+                    onSubtasksChange={(updated, done) => {
+                      setSubtasks(updated);
+                      setCompletedSubtaskCount(done);
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Activity / Comments */}
               <div>

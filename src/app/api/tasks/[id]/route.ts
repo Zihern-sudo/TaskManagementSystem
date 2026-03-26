@@ -5,6 +5,31 @@ import { TASK_SELECT, VALID_STATUSES, VALID_PRIORITIES, serializeTask } from "@/
 import { getRequestUser } from "@/lib/session";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
+/**
+ * After a subtask status changes, check whether the parent task's status
+ * should be auto-updated based on subtask completion progress.
+ *
+ * Rules:
+ *  - All subtasks completed → set parent to "completed"
+ *  - At least one subtask not completed and parent is "completed" → revert parent to "in_progress"
+ */
+export async function syncParentStatus(parentId: string) {
+  const parent = await db.task.findUnique({
+    where: { id: parentId },
+    select: { id: true, status: true, subtasks: { select: { status: true } } },
+  });
+  if (!parent) return;
+
+  const allDone = parent.subtasks.length > 0 && parent.subtasks.every((s) => s.status === "completed");
+  const anyNotDone = parent.subtasks.some((s) => s.status !== "completed");
+
+  if (allDone && parent.status !== "completed") {
+    await db.task.update({ where: { id: parentId }, data: { status: "completed" } });
+  } else if (anyNotDone && parent.status === "completed") {
+    await db.task.update({ where: { id: parentId }, data: { status: "in_progress" } });
+  }
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ── GET /api/tasks/[id] ────────────────────────────────────────────────────
@@ -116,7 +141,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   const existing = await db.task.findUnique({
     where: { id },
-    select: { id: true, assignees: { select: { userId: true } } },
+    select: { id: true, parentId: true, assignees: { select: { userId: true } } },
   });
   if (!existing) return fail("Task not found.", 404);
 
@@ -196,6 +221,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     data: updateData,
     select: TASK_SELECT,
   });
+
+  // If this is a subtask and its status changed, sync the parent's status
+  if ("status" in data && existing.parentId) {
+    await syncParentStatus(existing.parentId);
+  }
 
   return ok("Task updated successfully.", { task: serializeTask(task) });
 }

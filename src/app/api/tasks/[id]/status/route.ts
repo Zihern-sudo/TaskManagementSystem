@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { VALID_STATUSES } from "@/app/api/tasks/route";
 import { TaskStatus } from "@prisma/client";
+import { syncParentStatus } from "@/app/api/tasks/[id]/route";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     return fail(`status must be one of: ${VALID_STATUSES.join(", ")}.`, 422);
   }
 
-  const existing = await db.task.findUnique({ where: { id }, select: { id: true } });
+  const existing = await db.task.findUnique({ where: { id }, select: { id: true, parentId: true } });
   if (!existing) return fail("Task not found.", 404);
 
   const task = await db.task.update({
@@ -42,6 +43,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     data: { status: status as TaskStatus },
     select: { id: true, status: true, updatedAt: true },
   });
+
+  // Sync parent task status when a subtask's status changes
+  if (existing.parentId) {
+    await syncParentStatus(existing.parentId);
+  }
 
   return ok("Task status updated successfully.", { task });
 }
