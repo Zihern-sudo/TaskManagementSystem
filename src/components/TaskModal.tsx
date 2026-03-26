@@ -489,6 +489,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                       setSubtasks(updated);
                       setCompletedSubtaskCount(done);
                     }}
+                    onParentStatusChange={(newStatus) => setStatus(newStatus)}
                   />
                 </div>
               )}

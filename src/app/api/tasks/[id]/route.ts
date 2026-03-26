@@ -6,28 +6,47 @@ import { getRequestUser } from "@/lib/session";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 
 /**
- * After a subtask status changes, check whether the parent task's status
- * should be auto-updated based on subtask completion progress.
+ * After a subtask status changes, auto-update the parent task status based on
+ * subtask completion progress. Automation is one-directional where possible
+ * and never overrides statuses the user set manually beyond the automation target.
  *
  * Rules:
- *  - All subtasks completed → set parent to "completed"
- *  - At least one subtask not completed and parent is "completed" → revert parent to "in_progress"
+ *  - 0 of N done        → no-op (full manual control)
+ *  - 1…N-1 of N done   → set parent to "in_progress"
+ *                           • forward:  only if parent is currently "not_started"
+ *                           • rollback: also fires if parent is "in_review" (was all-done,
+ *                             one subtask unchecked → step back to in_progress)
+ *                           • skip if already "in_progress" or "completed"
+ *  - All N done         → set parent to "in_review"
+ *                           • only if parent is currently "not_started" or "in_progress"
+ *                           • skip if already "in_review" or "completed"
+ *
+ * "completed" is always manual — automation never sets or clears it.
  */
 export async function syncParentStatus(parentId: string) {
   const parent = await db.task.findUnique({
     where: { id: parentId },
     select: { id: true, status: true, subtasks: { select: { status: true } } },
   });
-  if (!parent) return;
+  if (!parent || parent.subtasks.length === 0) return;
 
-  const allDone = parent.subtasks.length > 0 && parent.subtasks.every((s) => s.status === "completed");
-  const anyNotDone = parent.subtasks.some((s) => s.status !== "completed");
+  const total = parent.subtasks.length;
+  const completedCount = parent.subtasks.filter((s) => s.status === "completed").length;
 
-  if (allDone && parent.status !== "completed") {
-    await db.task.update({ where: { id: parentId }, data: { status: "completed" } });
-  } else if (anyNotDone && parent.status === "completed") {
-    await db.task.update({ where: { id: parentId }, data: { status: "in_progress" } });
+  if (completedCount === total) {
+    // All subtasks done → advance to "in_review" (review gate before marking Done)
+    if (parent.status === "not_started" || parent.status === "in_progress") {
+      await db.task.update({ where: { id: parentId }, data: { status: "in_review" } });
+    }
+  } else if (completedCount >= 1) {
+    // Some (not all) subtasks done → target is "in_progress"
+    // Fire for "not_started" (forward) and "in_review" (rollback when one unchecked)
+    // Skip "in_progress" (already there) and "completed" (manually set — don't revert)
+    if (parent.status === "not_started" || parent.status === "in_review") {
+      await db.task.update({ where: { id: parentId }, data: { status: "in_progress" } });
+    }
   }
+  // completedCount === 0 → no-op; manual control fully preserved
 }
 
 type RouteContext = { params: Promise<{ id: string }> };
