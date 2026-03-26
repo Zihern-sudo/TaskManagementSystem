@@ -193,11 +193,13 @@ export default function CustomFieldFormModal({
 
     setSaving(true);
     try {
-      // Check for destructive impact (skip if this is a confirmed re-submit)
+      // Check for destructive impact (skip if this is a confirmed re-submit).
+      // Early return here must NOT clear pendingConfirm — we're about to set it.
       if (!confirmedBody) {
         const valuesCleared = await checkImpact(body);
         if (valuesCleared > 0) {
           setPendingConfirm({ valuesCleared, body });
+          setSaving(false);
           return;
         }
       }
@@ -232,12 +234,13 @@ export default function CustomFieldFormModal({
       if (migrated > 0) successMsg += ` ${migrated} value${migrated !== 1 ? "s" : ""} migrated.`;
       toast.success(successMsg);
 
+      setPendingConfirm(null);
       onSaved(data.data.field as CustomFieldDef);
     } catch {
+      setPendingConfirm(null);
       toast.error("Network error. Please try again.");
     } finally {
       setSaving(false);
-      setPendingConfirm(null);
     }
   }
 
