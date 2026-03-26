@@ -42,6 +42,16 @@ export interface UserCustomField {
   value: string;
 }
 
+export interface Subtask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assignees: AssignedUser[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -51,6 +61,11 @@ export interface Task {
   dueDate?: string | null;
   assignees: AssignedUser[];
   customFields: TaskCustomField[];
+  // Subtask fields
+  parentId?: string | null;
+  subtasks?: Subtask[];
+  subtaskCount?: number;
+  completedSubtaskCount?: number;
   createdAt: string;
   updatedAt: string;
 }

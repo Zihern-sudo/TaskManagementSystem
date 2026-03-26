@@ -11,6 +11,22 @@ export const VALID_PRIORITIES = Object.values(TaskPriority);
 
 // ── Shared select shape ────────────────────────────────────────────────────
 
+// Lightweight shape used for subtasks nested inside a parent task
+export const SUBTASK_SELECT = {
+  id: true,
+  title: true,
+  status: true,
+  priority: true,
+  assignees: {
+    select: {
+      user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
+    },
+    orderBy: { assignedAt: "asc" as const },
+  },
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export const TASK_SELECT = {
   id: true,
   title: true,
@@ -18,6 +34,7 @@ export const TASK_SELECT = {
   status: true,
   priority: true,
   dueDate: true,
+  parentId: true,
   assignees: {
     select: {
       user: { select: { id: true, fullName: true, email: true, avatarUrl: true } },
@@ -32,14 +49,33 @@ export const TASK_SELECT = {
       value: true,
     },
   },
+  subtasks: { select: SUBTASK_SELECT, orderBy: { createdAt: "asc" as const } },
   createdAt: true,
   updatedAt: true,
 } as const;
 
 // Flatten assignees from join table and custom field values to clean shapes
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function serializeSubtask(subtask: any) {
+  return {
+    id: subtask.id,
+    title: subtask.title,
+    status: subtask.status,
+    priority: subtask.priority,
+    assignees: subtask.assignees.map((a: { user: unknown }) => a.user),
+    createdAt: new Date(subtask.createdAt).toISOString(),
+    updatedAt: new Date(subtask.updatedAt).toISOString(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeTask(task: any) {
-  const { customFieldValues, ...rest } = task;
+  const { customFieldValues, subtasks, ...rest } = task;
+  const serializedSubtasks = (subtasks ?? []).map(serializeSubtask);
+  const subtaskCount = serializedSubtasks.length;
+  const completedSubtaskCount = serializedSubtasks.filter(
+    (s: { status: string }) => s.status === "completed"
+  ).length;
   return {
     ...rest,
     assignees: task.assignees.map((a: { user: unknown }) => a.user),
@@ -55,6 +91,9 @@ export function serializeTask(task: any) {
         type: v.field.type,
         value: v.value,
       })),
+    subtasks: serializedSubtasks,
+    subtaskCount,
+    completedSubtaskCount,
     dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
     createdAt: new Date(task.createdAt).toISOString(),
     updatedAt: new Date(task.updatedAt).toISOString(),
@@ -64,10 +103,12 @@ export function serializeTask(task: any) {
 // ── GET /api/tasks ─────────────────────────────────────────────────────────
 
 /**
- * Returns all tasks ordered by creation date (newest first).
+ * Returns all top-level tasks (parentId = null) ordered by creation date (newest first).
+ * Subtasks are excluded from this list — they appear nested inside their parent via GET /api/tasks/[id].
  */
 export async function GET() {
   const tasks = await db.task.findMany({
+    where: { parentId: null },
     select: TASK_SELECT,
     orderBy: { createdAt: "desc" },
   });
@@ -109,6 +150,7 @@ export async function POST(req: NextRequest) {
     dueDate,
     assigneeIds,
     customFieldValues,
+    parentId,
   } = (body ?? {}) as Record<string, unknown>;
 
   // ── Validate core fields ───────────────────────────────────────────────
@@ -164,8 +206,22 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Validate parentId if provided
+  if (parentId !== undefined && parentId !== null) {
+    if (typeof parentId !== "string") {
+      errors.parentId = ["parentId must be a string task ID."];
+    }
+  }
+
   if (Object.keys(errors).length > 0) {
     return fail("Validation failed.", 422, errors);
+  }
+
+  // ── Validate parentId references a top-level task ─────────────────────
+  if (parentId && typeof parentId === "string") {
+    const parent = await db.task.findUnique({ where: { id: parentId }, select: { id: true, parentId: true } });
+    if (!parent) return fail("Parent task not found.", 404);
+    if (parent.parentId !== null) return fail("Subtasks cannot be nested more than one level deep.", 422);
   }
 
   // ── Verify assignees exist ─────────────────────────────────────────────
@@ -218,6 +274,7 @@ export async function POST(req: NextRequest) {
       ...(status !== undefined && { status: status as TaskStatus }),
       ...(priority !== undefined && { priority: priority as TaskPriority }),
       ...(parsedDueDate !== undefined && { dueDate: parsedDueDate }),
+      ...(parentId && typeof parentId === "string" && { parentId }),
       ...(ids.length > 0 && {
         assignees: { create: ids.map((userId) => ({ userId })) },
       }),
