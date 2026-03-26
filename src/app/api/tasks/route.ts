@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Validate custom fields against schema ─────────────────────────────
-  const allFields = await db.customField.findMany();
+  const allFields = await db.customField.findMany({ where: { entity: "task" } });
   const fieldMap = new Map(allFields.map((f) => [f.id, f]));
 
   // Required field check
