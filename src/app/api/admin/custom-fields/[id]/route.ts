@@ -4,20 +4,27 @@ import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType } from "@prisma/client";
 
-const MODAL_LAYOUT_KEY = "task_modal_layout";
-const LIST_LAYOUT_KEY = "task_list_layout";
+/**
+ * Removes a field ID from every per-user layout AppSetting row that contains it.
+ * Uses a pattern match on the key prefix so all surfaces are covered.
+ */
+async function removeFieldFromAllLayouts(fieldId: string): Promise<void> {
+  const settings = await db.appSetting.findMany({
+    where: { key: { startsWith: "user_layout:" } },
+  });
 
-async function removeFieldFromLayout(key: string, fieldId: string): Promise<void> {
-  const setting = await db.appSetting.findUnique({ where: { key } });
-  if (!setting) return;
-  try {
-    const parsed = JSON.parse(setting.value);
-    if (!Array.isArray(parsed)) return;
-    const updated = (parsed as string[]).filter((id) => id !== fieldId);
-    await db.appSetting.update({ where: { key }, data: { value: JSON.stringify(updated) } });
-  } catch {
-    // ignore
-  }
+  const updates = settings.flatMap((setting) => {
+    try {
+      const parsed = JSON.parse(setting.value);
+      if (!Array.isArray(parsed) || !(parsed as string[]).includes(fieldId)) return [];
+      const updated = (parsed as string[]).filter((id) => id !== fieldId);
+      return [db.appSetting.update({ where: { key: setting.key }, data: { value: JSON.stringify(updated) } })];
+    } catch {
+      return [];
+    }
+  });
+
+  if (updates.length > 0) await Promise.all(updates);
 }
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -234,9 +241,8 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
 
   await db.customField.delete({ where: { id } });
 
-  // Remove field from both layout settings
-  await removeFieldFromLayout(MODAL_LAYOUT_KEY, id);
-  await removeFieldFromLayout(LIST_LAYOUT_KEY, id);
+  // Remove field ID from all per-user layout settings
+  await removeFieldFromAllLayouts(id);
 
   return ok("Custom field and all its values deleted successfully.");
 }

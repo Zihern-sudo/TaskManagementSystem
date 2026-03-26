@@ -9,9 +9,12 @@ import { getRequestUser } from "@/lib/session";
  */
 export const MODAL_SYSTEM_FIELDS = ["status", "priority", "due_date", "assignees", "created_at"] as const;
 export const LIST_SYSTEM_FIELDS = ["status", "priority", "assignees", "due_date", "created_at"] as const;
+export const USER_LIST_SYSTEM_FIELDS = ["role", "status", "created_at"] as const;
 
-const MODAL_LAYOUT_KEY = "task_modal_layout";
-const LIST_LAYOUT_KEY = "task_list_layout";
+/** Build a per-user AppSetting key. */
+function userKey(userId: string, surface: "task_modal" | "task_list" | "user_list"): string {
+  return `user_layout:${userId}:${surface}`;
+}
 
 /**
  * Merges a stored layout with the current set of field IDs.
@@ -19,7 +22,7 @@ const LIST_LAYOUT_KEY = "task_list_layout";
  * - Appends any new IDs not present in the stored layout.
  * - Drops IDs from the stored layout that no longer exist.
  */
-function mergeLayout(stored: string[], current: string[]): string[] {
+export function mergeLayout(stored: string[], current: string[]): string[] {
   const currentSet = new Set(current);
   const seen = new Set<string>();
   const result: string[] = [];
@@ -55,45 +58,51 @@ async function getStoredLayout(key: string): Promise<string[]> {
 // ── GET /api/admin/settings/field-layout ────────────────────────────────────
 
 /**
- * Returns the current field layout for the modal right panel and list view.
- * Merges stored layout with current custom fields so any new fields are appended.
+ * Returns the calling user's personal field layout for all surfaces.
+ * Merges stored layout with current custom fields so new fields are appended.
  * Accessible to all authenticated users.
  *
  * Response:
- *   modalLayout  string[]  — ordered field IDs for TaskModal right panel
- *   listLayout   string[]  — ordered field IDs for TaskBoard list view columns
+ *   modalLayout    string[]  — ordered field IDs for TaskModal right panel
+ *   listLayout     string[]  — ordered field IDs for TaskBoard list view columns
+ *   userListLayout string[]  — ordered field IDs for User Management table columns
  */
 export async function GET(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
-  const [taskCustomFields, modalStored, listStored] = await Promise.all([
+  const [taskCustomFields, userCustomFields, modalStored, listStored, userListStored] = await Promise.all([
     db.customField.findMany({ where: { entity: "task" }, orderBy: { order: "asc" }, select: { id: true } }),
-    getStoredLayout(MODAL_LAYOUT_KEY),
-    getStoredLayout(LIST_LAYOUT_KEY),
+    db.customField.findMany({ where: { entity: "user" }, orderBy: { order: "asc" }, select: { id: true } }),
+    getStoredLayout(userKey(caller.id, "task_modal")),
+    getStoredLayout(userKey(caller.id, "task_list")),
+    getStoredLayout(userKey(caller.id, "user_list")),
   ]);
 
-  const customFieldIds = taskCustomFields.map((f) => f.id);
+  const taskCFIds = taskCustomFields.map((f) => f.id);
+  const userCFIds = userCustomFields.map((f) => f.id);
 
-  const modalLayout = mergeLayout(modalStored, [...MODAL_SYSTEM_FIELDS, ...customFieldIds]);
-  const listLayout = mergeLayout(listStored, [...LIST_SYSTEM_FIELDS, ...customFieldIds]);
+  const modalLayout = mergeLayout(modalStored, [...MODAL_SYSTEM_FIELDS, ...taskCFIds]);
+  const listLayout = mergeLayout(listStored, [...LIST_SYSTEM_FIELDS, ...taskCFIds]);
+  const userListLayout = mergeLayout(userListStored, [...USER_LIST_SYSTEM_FIELDS, ...userCFIds]);
 
-  return ok("Field layout retrieved successfully.", { modalLayout, listLayout });
+  return ok("Field layout retrieved successfully.", { modalLayout, listLayout, userListLayout });
 }
 
 // ── PATCH /api/admin/settings/field-layout ──────────────────────────────────
 
 /**
- * Saves a new field layout. Admin only.
+ * Saves the calling user's personal field layout. Any authenticated user can
+ * update their own layout.
  *
  * Body:
- *   modalLayout?  string[]  — new ordered field IDs for TaskModal right panel
- *   listLayout?   string[]  — new ordered field IDs for TaskBoard list view
+ *   modalLayout?    string[]  — new ordered field IDs for TaskModal right panel
+ *   listLayout?     string[]  — new ordered field IDs for TaskBoard list view
+ *   userListLayout? string[]  — new ordered field IDs for User Management table
  */
 export async function PATCH(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
-  if (caller.role !== "admin") return fail("Only admins can update field layout.", 403);
 
   let body: unknown;
   try {
@@ -104,36 +113,34 @@ export async function PATCH(req: NextRequest) {
 
   const data = (body ?? {}) as Record<string, unknown>;
 
-  if (!("modalLayout" in data) && !("listLayout" in data)) {
-    return fail("Provide modalLayout or listLayout.");
+  if (!("modalLayout" in data) && !("listLayout" in data) && !("userListLayout" in data)) {
+    return fail("Provide modalLayout, listLayout, or userListLayout.");
   }
 
   const ops: Promise<unknown>[] = [];
 
-  if ("modalLayout" in data) {
-    if (!Array.isArray(data.modalLayout) || (data.modalLayout as unknown[]).some((id) => typeof id !== "string")) {
-      return fail("modalLayout must be an array of strings.");
+  function queueLayout(field: string, surface: "task_modal" | "task_list" | "user_list") {
+    const value = data[field];
+    if (!(field in data)) return;
+    if (!Array.isArray(value) || (value as unknown[]).some((id) => typeof id !== "string")) {
+      throw new Error(`${field} must be an array of strings.`);
     }
+    const key = userKey(caller!.id, surface);
     ops.push(
       db.appSetting.upsert({
-        where: { key: MODAL_LAYOUT_KEY },
-        update: { value: JSON.stringify(data.modalLayout) },
-        create: { key: MODAL_LAYOUT_KEY, value: JSON.stringify(data.modalLayout) },
+        where: { key },
+        update: { value: JSON.stringify(value) },
+        create: { key, value: JSON.stringify(value) },
       })
     );
   }
 
-  if ("listLayout" in data) {
-    if (!Array.isArray(data.listLayout) || (data.listLayout as unknown[]).some((id) => typeof id !== "string")) {
-      return fail("listLayout must be an array of strings.");
-    }
-    ops.push(
-      db.appSetting.upsert({
-        where: { key: LIST_LAYOUT_KEY },
-        update: { value: JSON.stringify(data.listLayout) },
-        create: { key: LIST_LAYOUT_KEY, value: JSON.stringify(data.listLayout) },
-      })
-    );
+  try {
+    queueLayout("modalLayout", "task_modal");
+    queueLayout("listLayout", "task_list");
+    queueLayout("userListLayout", "user_list");
+  } catch (e) {
+    return fail((e as Error).message);
   }
 
   await Promise.all(ops);

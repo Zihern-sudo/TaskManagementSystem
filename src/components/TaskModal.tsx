@@ -562,7 +562,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
               {/* Panel header with Customize button (admin only) */}
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Details</span>
-                {currentUserRole === "admin" && !isCustomizing && (
+                {!isCustomizing && (
                   <button
                     onClick={() => { setLocalLayout([...modalLayout]); setIsCustomizing(true); }}
                     className="flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
@@ -578,7 +578,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
               {isCustomizing ? (
                 /* ── Customize mode: drag-and-drop field reorder ── */
                 <div className="space-y-3">
-                  <p className="text-xs text-slate-500">Drag fields to reorder. Changes apply globally for all users.</p>
+                  <p className="text-xs text-slate-500">Drag fields to reorder. Your personal layout is saved.</p>
                   <DndContext
                     collisionDetection={closestCenter}
                     onDragEnd={(event: DragEndEvent) => {
