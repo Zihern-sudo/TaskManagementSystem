@@ -167,6 +167,9 @@ export default function CustomFieldFormModal({
   async function checkImpact(body: Record<string, unknown>): Promise<number> {
     if (!isEdit) return 0;
 
+    // picklist → text is always safe: values are preserved as free text, nothing deleted
+    if (typeChanged && type === "text") return 0;
+
     const finalOptions = (body.options as string[] | undefined) ?? [];
     const renames = (body.renames as Record<string, string> | undefined) ?? {};
     const removedOptions = computeRemovedOptions(finalOptions, renames);
