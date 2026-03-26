@@ -192,6 +192,8 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? []);
   const [completedSubtaskCount, setCompletedSubtaskCount] = useState(task?.completedSubtaskCount ?? 0);
+  const [wasAutoUpdated, setWasAutoUpdated] = useState(false);
+  const autoUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Custom field values keyed by fieldId
   const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
@@ -489,7 +491,13 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                       setSubtasks(updated);
                       setCompletedSubtaskCount(done);
                     }}
-                    onParentStatusChange={(newStatus) => setStatus(newStatus)}
+                    onParentStatusChange={(newStatus) => {
+                      setStatus(newStatus);
+                      setWasAutoUpdated(true);
+                      toast.info(`Status auto-updated to "${STATUS_LABELS[newStatus]}" based on subtask progress.`);
+                      if (autoUpdateTimerRef.current) clearTimeout(autoUpdateTimerRef.current);
+                      autoUpdateTimerRef.current = setTimeout(() => setWasAutoUpdated(false), 3000);
+                    }}
                   />
                 </div>
               )}
@@ -504,13 +512,20 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
             {/* Right panel — metadata */}
             <div className="w-full md:w-68 xl:w-72 md:shrink-0 overflow-y-auto px-5 py-5 bg-slate-50/80 space-y-4">
               <MetaField label="Status">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
-                >
-                  {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                </select>
+                <div className="relative">
+                  <select
+                    value={status}
+                    onChange={(e) => { setStatus(e.target.value as TaskStatus); setWasAutoUpdated(false); }}
+                    className={`w-full border rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors ${wasAutoUpdated ? "border-indigo-400 ring-2 ring-indigo-200" : "border-slate-200"}`}
+                  >
+                    {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                  </select>
+                  {wasAutoUpdated && (
+                    <span className="absolute -top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white uppercase tracking-wide animate-pulse">
+                      Auto
+                    </span>
+                  )}
+                </div>
               </MetaField>
 
               <MetaField label="Priority">

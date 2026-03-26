@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Subtask, TaskPriority, TaskStatus, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
 
@@ -110,13 +110,17 @@ function AddSubtaskForm({ parentTaskId, onCreated, onCancel }: AddSubtaskFormPro
 interface SubtaskRowProps {
   subtask: Subtask;
   onStatusChange: (id: string, status: TaskStatus) => void;
+  onTitleChange: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   isAdmin: boolean;
 }
 
-function SubtaskRow({ subtask, onStatusChange, onDelete, isAdmin }: SubtaskRowProps) {
+function SubtaskRow({ subtask, onStatusChange, onTitleChange, onDelete, isAdmin }: SubtaskRowProps) {
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(subtask.title);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   async function handleStatusChange(newStatus: TaskStatus) {
     if (updating) return;
@@ -137,6 +141,52 @@ function SubtaskRow({ subtask, onStatusChange, onDelete, isAdmin }: SubtaskRowPr
     } finally {
       setUpdating(false);
     }
+  }
+
+  function startEditing() {
+    if (!isAdmin) return;
+    setEditTitle(subtask.title);
+    setIsEditing(true);
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  }
+
+  async function commitEdit() {
+    const trimmed = editTitle.trim();
+    if (!trimmed) {
+      cancelEdit();
+      return;
+    }
+    if (trimmed === subtask.title) {
+      setIsEditing(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tasks/${subtask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: trimmed }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to rename subtask.");
+        cancelEdit();
+        return;
+      }
+      onTitleChange(subtask.id, trimmed);
+      setIsEditing(false);
+    } catch {
+      toast.error("Network error.");
+      cancelEdit();
+    }
+  }
+
+  function cancelEdit() {
+    setEditTitle(subtask.title);
+    setIsEditing(false);
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+    if (e.key === "Escape") cancelEdit();
   }
 
   async function handleDelete() {
@@ -183,10 +233,26 @@ function SubtaskRow({ subtask, onStatusChange, onDelete, isAdmin }: SubtaskRowPr
       {/* Priority dot */}
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[subtask.priority]}`} />
 
-      {/* Title */}
-      <span className={`flex-1 text-sm min-w-0 truncate ${isDone ? "line-through text-slate-400" : "text-slate-700"}`}>
-        {subtask.title}
-      </span>
+      {/* Title — double-click to edit (admin only) */}
+      {isEditing ? (
+        <input
+          ref={editInputRef}
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleEditKeyDown}
+          className="flex-1 text-sm min-w-0 border border-indigo-300 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white text-slate-800"
+        />
+      ) : (
+        <span
+          onDoubleClick={startEditing}
+          title={isAdmin ? "Double-click to rename" : undefined}
+          className={`flex-1 text-sm min-w-0 truncate ${isDone ? "line-through text-slate-400" : "text-slate-700"} ${isAdmin ? "cursor-text" : ""}`}
+        >
+          {subtask.title}
+        </span>
+      )}
 
       {/* Status badge (small) */}
       <select
@@ -266,8 +332,42 @@ export default function SubtaskList({
     }
   }
 
+  function handleTitleChange(id: string, title: string) {
+    updateAndNotify(subtasks.map((s) => (s.id === id ? { ...s, title } : s)));
+  }
+
   function handleDelete(id: string) {
     updateAndNotify(subtasks.filter((s) => s.id !== id));
+  }
+
+  const [markingAllDone, setMarkingAllDone] = useState(false);
+
+  async function handleMarkAllDone() {
+    if (markingAllDone) return;
+    setMarkingAllDone(true);
+    try {
+      const res = await fetch(`/api/tasks/${parentTaskId}/subtasks/bulk-complete`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || "Failed to mark all subtasks as done.");
+        return;
+      }
+      updateAndNotify(data.data.subtasks);
+      // Fetch updated parent status and notify
+      if (onParentStatusChange) {
+        const parentRes = await fetch(`/api/tasks/${parentTaskId}`);
+        if (parentRes.ok) {
+          const parentData = await parentRes.json();
+          onParentStatusChange(parentData.data.task.status);
+        }
+      }
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setMarkingAllDone(false);
+    }
   }
 
   return (
@@ -288,18 +388,33 @@ export default function SubtaskList({
           )}
         </div>
 
-        {isAdmin && !showAddForm && (
-          <button
-            type="button"
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-            Add subtask
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {isAdmin && total > 0 && completedCount < total && (
+            <button
+              type="button"
+              onClick={handleMarkAllDone}
+              disabled={markingAllDone}
+              className="flex items-center gap-1 text-[10px] font-bold text-green-600 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              {markingAllDone ? "Marking…" : "Mark all done"}
+            </button>
+          )}
+          {isAdmin && !showAddForm && (
+            <button
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+              </svg>
+              Add subtask
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -332,6 +447,7 @@ export default function SubtaskList({
               key={subtask.id}
               subtask={subtask}
               onStatusChange={handleStatusChange}
+              onTitleChange={handleTitleChange}
               onDelete={handleDelete}
               isAdmin={isAdmin}
             />
