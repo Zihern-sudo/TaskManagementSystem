@@ -267,6 +267,9 @@ export default function UserManagementTable() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "">("");
   const [filterStatus, setFilterStatus] = useState<AccountStatus | "">("");
+  const [filterDateField, setFilterDateField] = useState<"createdAt" | "updatedAt">("createdAt");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const [editUser, setEditUser] = useState<User | null | undefined>(undefined);
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -364,7 +367,14 @@ export default function UserManagementTable() {
     const matchSearch = !search || u.fullName.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchRole = !filterRole || u.role === filterRole;
     const matchStatus = !filterStatus || u.status === filterStatus;
-    return matchSearch && matchRole && matchStatus;
+    const matchDate = (() => {
+      if (!filterDateFrom && !filterDateTo) return true;
+      const ts = new Date(u[filterDateField]).setHours(0, 0, 0, 0);
+      const from = filterDateFrom ? new Date(filterDateFrom).getTime() : -Infinity;
+      const to = filterDateTo ? new Date(filterDateTo).setHours(23, 59, 59, 999) : Infinity;
+      return ts >= from && ts <= to;
+    })();
+    return matchSearch && matchRole && matchStatus && matchDate;
   });
 
   const sorted = sortUsers(filtered, sortField, sortDir);
@@ -475,9 +485,45 @@ export default function UserManagementTable() {
           <option value="invited">Invited</option>
           <option value="pending">Pending</option>
         </select>
-        {(search || filterRole || filterStatus) && (
+        {/* Date range filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-slate-50 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setFilterDateField("createdAt")}
+              className={`px-3 py-2 transition-colors ${filterDateField === "createdAt" ? "bg-indigo-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}
+            >
+              Created
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterDateField("updatedAt")}
+              className={`px-3 py-2 transition-colors ${filterDateField === "updatedAt" ? "bg-indigo-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}
+            >
+              Modified
+            </button>
+          </div>
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            title="From date"
+            className="text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+          />
+          <span className="text-xs text-slate-400 font-medium">to</span>
+          <input
+            type="date"
+            value={filterDateTo}
+            min={filterDateFrom || undefined}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+            title="To date"
+            className="text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+          />
+        </div>
+
+        {(search || filterRole || filterStatus || filterDateFrom || filterDateTo) && (
           <button
-            onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }}
+            onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); setFilterDateFrom(""); setFilterDateTo(""); }}
             className="text-xs text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors font-semibold"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

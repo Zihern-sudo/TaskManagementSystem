@@ -136,6 +136,7 @@ export interface User {
   avatarUrl?: string | null;
   customFields: UserCustomField[];
   createdAt: string;
+  updatedAt: string;
 }
 
 
