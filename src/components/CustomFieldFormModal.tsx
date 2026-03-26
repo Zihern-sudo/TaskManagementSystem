@@ -3,6 +3,16 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { CustomFieldDef, FieldEntity, FieldType } from "@/types";
+import { useFieldLayout } from "@/context/FieldLayoutContext";
+import { useCustomFields } from "@/contexts/CustomFieldsContext";
+
+const SYSTEM_FIELD_LABELS: Record<string, string> = {
+  status: "Status",
+  priority: "Priority",
+  due_date: "Due Date",
+  assignees: "Assignees",
+  created_at: "Created At",
+};
 
 function slugify(label: string): string {
   return label
@@ -57,6 +67,19 @@ export default function CustomFieldFormModal({
   const [optionRows, setOptionRows] = useState<OptionRow[]>(() =>
     (field?.options ?? []).map((o) => ({ localId: uid(), original: o, value: o }))
   );
+
+  // ── Position (create mode, task entity only) ──────────────────────────────
+  const [insertAfter, setInsertAfter] = useState<string | "__beginning__">("__end__");
+
+  // ── Layout context (for position dropdown) ────────────────────────────────
+  const { modalLayout } = useFieldLayout();
+  const { taskFields: allCustomFields } = useCustomFields();
+
+  // Build label map for the position dropdown
+  const fieldLabelMap: Record<string, string> = { ...SYSTEM_FIELD_LABELS };
+  for (const cf of allCustomFields) {
+    fieldLabelMap[cf.id] = cf.label;
+  }
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -160,7 +183,11 @@ export default function CustomFieldFormModal({
       const options = type === "picklist"
         ? optionsRaw.split(",").map((o) => o.trim()).filter(Boolean)
         : [];
-      return { label: label.trim(), fieldKey: fieldKey.trim(), type, entity, showInListView, options, required };
+      const body: Record<string, unknown> = { label: label.trim(), fieldKey: fieldKey.trim(), type, entity, showInListView, options, required };
+      if (entity === "task" && insertAfter !== "__end__") {
+        body.insertAfter = insertAfter === "__beginning__" ? null : insertAfter;
+      }
+      return body;
     }
 
     const finalOptions = optionRows.map((r) => r.value.trim()).filter(Boolean);
@@ -345,6 +372,29 @@ export default function CustomFieldFormModal({
               ))}
             </div>
           </div>
+
+          {/* Position (create mode, task entity) */}
+          {!isEdit && entity === "task" && modalLayout.length > 0 && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Position
+              </label>
+              <select
+                value={insertAfter}
+                onChange={(e) => setInsertAfter(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+              >
+                <option value="__beginning__">At the beginning</option>
+                {modalLayout.map((id) => (
+                  <option key={id} value={id}>
+                    After {fieldLabelMap[id] ?? id}
+                  </option>
+                ))}
+                <option value="__end__">At the end</option>
+              </select>
+              <p className="mt-1 text-[11px] text-slate-400">Where this field appears in the task panel and list view.</p>
+            </div>
+          )}
 
           {/* Label */}
           <div>

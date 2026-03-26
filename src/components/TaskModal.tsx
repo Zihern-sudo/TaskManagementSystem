@@ -5,10 +5,37 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Task, TaskPriority, TaskStatus, AssignedUser, PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_DOT, STATUS_LABELS, STATUS_COLORS } from "@/types";
 import { useCustomFields } from "@/contexts/CustomFieldsContext";
+import { useFieldLayout } from "@/context/FieldLayoutContext";
 import CommentSection from "./CommentSection";
 import ConfirmDialog from "./ConfirmDialog";
 import SubtaskList from "./SubtaskList";
 import { Subtask } from "@/types";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+const MODAL_SYSTEM_FIELD_LABELS: Record<string, string> = {
+  status: "Status",
+  priority: "Priority",
+  due_date: "Due Date",
+  assignees: "Assignees",
+  created_at: "Created At",
+};
+
+function SortableFieldItem({ id, label }: { id: string; label: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 shadow-sm select-none">
+      <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 touch-none shrink-0">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <span className="flex-1 truncate">{label}</span>
+    </div>
+  );
+}
 
 interface TaskModalProps {
   task: Task | null;
@@ -180,6 +207,7 @@ function MetaField({ label, children }: { label: string; children: React.ReactNo
 
 export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole }: TaskModalProps) {
   const { taskFields: customFieldDefs } = useCustomFields();
+  const { modalLayout, saveModalLayout } = useFieldLayout();
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "not_started");
@@ -194,6 +222,9 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   const [completedSubtaskCount, setCompletedSubtaskCount] = useState(task?.completedSubtaskCount ?? 0);
   const [wasAutoUpdated, setWasAutoUpdated] = useState(false);
   const autoUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [localLayout, setLocalLayout] = useState<string[]>([]);
+  const [savingLayout, setSavingLayout] = useState(false);
 
   // Custom field values keyed by fieldId
   const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
@@ -527,126 +558,203 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
             </div>
 
             {/* Right panel — metadata */}
-            <div className="w-full md:w-68 xl:w-72 md:shrink-0 overflow-y-auto px-5 py-5 bg-slate-50/80 space-y-4">
-              <MetaField label="Status">
-                <div className="relative">
-                  <select
-                    value={status}
-                    onChange={(e) => { setStatus(e.target.value as TaskStatus); setWasAutoUpdated(false); }}
-                    className={`w-full border rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors ${wasAutoUpdated ? "border-indigo-400 ring-2 ring-indigo-200" : "border-slate-200"}`}
+            <div className="w-full md:w-68 xl:w-72 md:shrink-0 overflow-y-auto px-5 py-5 bg-slate-50/80">
+              {/* Panel header with Customize button (admin only) */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Details</span>
+                {currentUserRole === "admin" && !isCustomizing && (
+                  <button
+                    onClick={() => { setLocalLayout([...modalLayout]); setIsCustomizing(true); }}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
                   >
-                    {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                  </select>
-                  {wasAutoUpdated && (
-                    <span className="absolute -top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white uppercase tracking-wide animate-pulse">
-                      Auto
-                    </span>
-                  )}
-                </div>
-              </MetaField>
-
-              <MetaField label="Priority">
-                <div className="relative">
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                    className="w-full border border-slate-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors appearance-none"
-                  >
-                    {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-                  </select>
-                  <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full pointer-events-none ${PRIORITY_DOT[priority]}`} />
-                </div>
-              </MetaField>
-
-              <MetaField label="Due Date">
-                <input
-                  type="date"
-                  value={dueDate}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
-                />
-              </MetaField>
-
-              <MetaField label="Assignees">
-                {currentUserRole === "admin" ? (
-                  <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
-                ) : (
-                  <div className="flex flex-wrap gap-1.5 min-h-[38px] items-center">
-                    {users.filter((u) => assigneeIds.includes(u.id)).length === 0 ? (
-                      <span className="text-sm text-slate-400">Unassigned</span>
-                    ) : (
-                      users.filter((u) => assigneeIds.includes(u.id)).map((u, i) => (
-                        <span key={u.id} className="flex items-center gap-1 bg-slate-100 text-slate-700 text-xs rounded-full px-2.5 py-1">
-                          <span
-                            className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white overflow-hidden shrink-0`}
-                            style={{ fontSize: "8px", fontWeight: "bold" }}
-                          >
-                            {u.avatarUrl
-                              ? <Image src={u.avatarUrl} alt={u.fullName} width={16} height={16} className="w-full h-full object-cover" unoptimized />
-                              : getInitials(u.fullName)}
-                          </span>
-                          {u.fullName.split(" ")[0]}
-                        </span>
-                      ))
-                    )}
-                  </div>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Reorder
+                  </button>
                 )}
-              </MetaField>
-
-              {/* Custom fields */}
-              {customFieldDefs.length > 0 && (
-                <>
-                  <div className="pt-1 border-t border-slate-200">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pt-1">Custom Fields</p>
-                    <div className="space-y-3">
-                      {customFieldDefs.map((def) => (
-                        <MetaField key={def.id} label={`${def.label}${def.required ? " *" : ""}`}>
-                          {def.type === "picklist" ? (
-                            <select
-                              value={cfValues[def.id] ?? ""}
-                              onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
-                              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
-                            >
-                              <option value="">— Select —</option>
-                              {def.options.map((opt) => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={cfValues[def.id] ?? ""}
-                              onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
-                              placeholder={`Enter ${def.label.toLowerCase()}…`}
-                              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors placeholder-slate-400"
-                            />
-                          )}
-                        </MetaField>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Priority badge preview */}
-              <div className="pt-1">
-                <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-bold ${PRIORITY_COLORS[priority]}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[priority]}`} />
-                  {PRIORITY_LABELS[priority]} Priority
-                </span>
               </div>
 
-              {/* Timestamps */}
-              {task && (
-                <div className="pt-4 border-t border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Created</span>
-                    <span className="text-xs text-slate-500 font-medium">{new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              {isCustomizing ? (
+                /* ── Customize mode: drag-and-drop field reorder ── */
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-500">Drag fields to reorder. Changes apply globally for all users.</p>
+                  <DndContext
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        setLocalLayout((prev) => {
+                          const oldIndex = prev.indexOf(active.id as string);
+                          const newIndex = prev.indexOf(over.id as string);
+                          return arrayMove(prev, oldIndex, newIndex);
+                        });
+                      }
+                    }}
+                  >
+                    <SortableContext items={localLayout} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-1.5">
+                        {localLayout.map((id) => {
+                          const label = MODAL_SYSTEM_FIELD_LABELS[id] ?? customFieldDefs.find((d) => d.id === id)?.label ?? id;
+                          return <SortableFieldItem key={id} id={id} label={label} />;
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      onClick={async () => {
+                        setSavingLayout(true);
+                        await saveModalLayout(localLayout);
+                        setSavingLayout(false);
+                        setIsCustomizing(false);
+                        toast.success("Layout saved.");
+                      }}
+                      disabled={savingLayout}
+                      className="flex-1 py-2 text-sm font-bold text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                    >
+                      {savingLayout ? "Saving…" : "Save Layout"}
+                    </button>
+                    <button
+                      onClick={() => setIsCustomizing(false)}
+                      className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Updated</span>
-                    <span className="text-xs text-slate-500 font-medium">{new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                </div>
+              ) : (
+                /* ── Normal mode: dynamic field rendering ── */
+                <div className="space-y-4">
+                  {modalLayout.map((fieldId) => {
+                    if (fieldId === "status") {
+                      return (
+                        <MetaField key="status" label="Status">
+                          <div className="relative">
+                            <select
+                              value={status}
+                              onChange={(e) => { setStatus(e.target.value as TaskStatus); setWasAutoUpdated(false); }}
+                              className={`w-full border rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors ${wasAutoUpdated ? "border-indigo-400 ring-2 ring-indigo-200" : "border-slate-200"}`}
+                            >
+                              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                            </select>
+                            {wasAutoUpdated && (
+                              <span className="absolute -top-2 right-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white uppercase tracking-wide animate-pulse">
+                                Auto
+                              </span>
+                            )}
+                          </div>
+                        </MetaField>
+                      );
+                    }
+                    if (fieldId === "priority") {
+                      return (
+                        <MetaField key="priority" label="Priority">
+                          <div className="relative">
+                            <select
+                              value={priority}
+                              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                              className="w-full border border-slate-200 rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors appearance-none"
+                            >
+                              {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
+                            </select>
+                            <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full pointer-events-none ${PRIORITY_DOT[priority]}`} />
+                          </div>
+                        </MetaField>
+                      );
+                    }
+                    if (fieldId === "due_date") {
+                      return (
+                        <MetaField key="due_date" label="Due Date">
+                          <input
+                            type="date"
+                            value={dueDate}
+                            min={new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setDueDate(e.target.value)}
+                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
+                          />
+                        </MetaField>
+                      );
+                    }
+                    if (fieldId === "assignees") {
+                      return (
+                        <MetaField key="assignees" label="Assignees">
+                          {currentUserRole === "admin" ? (
+                            <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 min-h-[38px] items-center">
+                              {users.filter((u) => assigneeIds.includes(u.id)).length === 0 ? (
+                                <span className="text-sm text-slate-400">Unassigned</span>
+                              ) : (
+                                users.filter((u) => assigneeIds.includes(u.id)).map((u, i) => (
+                                  <span key={u.id} className="flex items-center gap-1 bg-slate-100 text-slate-700 text-xs rounded-full px-2.5 py-1">
+                                    <span
+                                      className={`w-4 h-4 rounded-full ${AVATAR_COLORS[i % AVATAR_COLORS.length]} flex items-center justify-center text-white overflow-hidden shrink-0`}
+                                      style={{ fontSize: "8px", fontWeight: "bold" }}
+                                    >
+                                      {u.avatarUrl
+                                        ? <Image src={u.avatarUrl} alt={u.fullName} width={16} height={16} className="w-full h-full object-cover" unoptimized />
+                                        : getInitials(u.fullName)}
+                                    </span>
+                                    {u.fullName.split(" ")[0]}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </MetaField>
+                      );
+                    }
+                    if (fieldId === "created_at") {
+                      return task ? (
+                        <div key="created_at" className="pt-1 border-t border-slate-200 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Created</span>
+                            <span className="text-xs text-slate-500 font-medium">{new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Updated</span>
+                            <span className="text-xs text-slate-500 font-medium">{new Date(task.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                          </div>
+                        </div>
+                      ) : null;
+                    }
+                    // Custom field
+                    const def = customFieldDefs.find((d) => d.id === fieldId);
+                    if (!def) return null;
+                    return (
+                      <MetaField key={def.id} label={`${def.label}${def.required ? " *" : ""}`}>
+                        {def.type === "picklist" ? (
+                          <select
+                            value={cfValues[def.id] ?? ""}
+                            onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors"
+                          >
+                            <option value="">— Select —</option>
+                            {def.options.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={cfValues[def.id] ?? ""}
+                            onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                            placeholder={`Enter ${def.label.toLowerCase()}…`}
+                            className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white hover:border-slate-300 transition-colors placeholder-slate-400"
+                          />
+                        )}
+                      </MetaField>
+                    );
+                  })}
+
+                  {/* Priority badge preview — always visible at bottom */}
+                  <div className="pt-1">
+                    <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-bold ${PRIORITY_COLORS[priority]}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[priority]}`} />
+                      {PRIORITY_LABELS[priority]} Priority
+                    </span>
                   </div>
                 </div>
               )}

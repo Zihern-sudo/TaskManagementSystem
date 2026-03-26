@@ -15,7 +15,14 @@ import {
   useSensors,
   useDroppable,
   useDraggable,
+  closestCenter,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   Task,
@@ -31,6 +38,7 @@ import {
   PRIORITY_LABELS,
 } from "@/types";
 import { useCustomFields } from "@/contexts/CustomFieldsContext";
+import { useFieldLayout } from "@/context/FieldLayoutContext";
 import TaskModal from "./TaskModal";
 import CustomFieldFormModal from "./CustomFieldFormModal";
 import AvatarGroup from "./AvatarGroup";
@@ -62,6 +70,30 @@ function formatDueDate(iso: string) {
 
 type SortField = "idx" | "title" | "status" | "priority" | "assignees" | "dueDate" | "createdAt";
 type SortDir = "asc" | "desc" | "none";
+
+// System field metadata for list view (declared after SortField type)
+const LIST_SYSTEM_FIELD_META: Record<string, { label: string; sortField: SortField | null; colClass: string }> = {
+  status:     { label: "Status",    sortField: "status",    colClass: "hidden md:table-cell" },
+  priority:   { label: "Priority",  sortField: "priority",  colClass: "hidden lg:table-cell" },
+  assignees:  { label: "Assignees", sortField: "assignees", colClass: "hidden lg:table-cell" },
+  due_date:   { label: "Due Date",  sortField: "dueDate",   colClass: "hidden xl:table-cell" },
+  created_at: { label: "Created",   sortField: "createdAt", colClass: "hidden xl:table-cell" },
+};
+
+function SortableColItem({ id, label }: { id: string; label: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 shadow-sm select-none">
+      <button {...attributes} {...listeners} className="cursor-grab text-slate-300 hover:text-slate-500 touch-none shrink-0">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <span className="flex-1 truncate">{label}</span>
+    </div>
+  );
+}
 
 const PRIORITY_ORDER: Record<TaskPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const STATUS_ORDER: Record<TaskStatus, number> = { not_started: 0, in_progress: 1, in_review: 2, completed: 3 };
@@ -293,14 +325,20 @@ interface ListViewProps {
   currentUserRole: string;
   exportTrigger: number;
   listCustomFields: CustomFieldDef[];
+  allCustomFieldDefs: CustomFieldDef[];
+  listLayout: string[];
+  onSaveListLayout: (layout: string[]) => Promise<void>;
 }
 
 const PAGE_SIZE = 10;
 
-function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole, exportTrigger, listCustomFields }: ListViewProps) {
+function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, currentUserRole, exportTrigger, listCustomFields, allCustomFieldDefs, listLayout, onSaveListLayout }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
+  const [isCustomizingCols, setIsCustomizingCols] = useState(false);
+  const [localColLayout, setLocalColLayout] = useState<string[]>([]);
+  const [savingColLayout, setSavingColLayout] = useState(false);
   const prevTasksKey = useRef(tasks.map((t) => t.id).join(","));
 
   // Reset to page 1 whenever the visible task set changes (due to filtering)
@@ -319,6 +357,13 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
     }
     setPage(1);
   }
+
+  // Visible columns = system fields + showInListView custom fields, in layout order
+  const visibleListLayout = listLayout.filter((id) => {
+    if (LIST_SYSTEM_FIELD_META[id]) return true;
+    const cf = allCustomFieldDefs.find((f) => f.id === id);
+    return cf?.showInListView === true;
+  });
 
   const sorted = sortTasks(tasks, sortField, sortDir);
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -382,33 +427,123 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
     toast.success("PDF exported successfully!");
   }
 
+  // Column label helper
+  function getColLabel(id: string): string {
+    if (LIST_SYSTEM_FIELD_META[id]) return LIST_SYSTEM_FIELD_META[id].label;
+    return allCustomFieldDefs.find((f) => f.id === id)?.label ?? id;
+  }
+
+  // Total visible cols: # + title + visibleListLayout + actions
+  const totalCols = 2 + visibleListLayout.length + 1;
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       {/* Top accent bar */}
       <div className="h-1" style={{ background: "linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)" }} />
+
+      {/* Column customizer panel (admin only, shown above table) */}
+      {isCustomizingCols ? (
+        <div className="p-4 border-b border-slate-100 bg-slate-50/80 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Reorder Columns</p>
+            <p className="text-xs text-slate-400"># and Title are always first · Actions is always last</p>
+          </div>
+          <DndContext
+            collisionDetection={closestCenter}
+            onDragEnd={(event: DragEndEvent) => {
+              const { active, over } = event;
+              if (over && active.id !== over.id) {
+                setLocalColLayout((prev) => {
+                  const oldIndex = prev.indexOf(active.id as string);
+                  const newIndex = prev.indexOf(over.id as string);
+                  return arrayMove(prev, oldIndex, newIndex);
+                });
+              }
+            }}
+          >
+            <SortableContext items={localColLayout} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-wrap gap-1.5">
+                {localColLayout.map((id) => (
+                  <SortableColItem key={id} id={id} label={getColLabel(id)} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                setSavingColLayout(true);
+                // Merge: new visible order + non-visible custom fields at end
+                const nonVisible = listLayout.filter((id) => !localColLayout.includes(id));
+                await onSaveListLayout([...localColLayout, ...nonVisible]);
+                setSavingColLayout(false);
+                setIsCustomizingCols(false);
+                toast.success("Column layout saved.");
+              }}
+              disabled={savingColLayout}
+              className="px-4 py-1.5 text-sm font-bold text-white rounded-lg disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+            >
+              {savingColLayout ? "Saving…" : "Save Layout"}
+            </button>
+            <button
+              onClick={() => setIsCustomizingCols(false)}
+              className="px-4 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : currentUserRole === "admin" && (
+        <div className="flex items-center justify-end px-4 py-2 border-b border-slate-100">
+          <button
+            onClick={() => { setLocalColLayout([...visibleListLayout]); setIsCustomizingCols(true); }}
+            className="flex items-center gap-1 text-[11px] font-semibold text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            Reorder Columns
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[480px]">
         <thead>
           <tr className="border-b-2 border-slate-100 bg-gradient-to-b from-slate-50 to-white">
             <SortTh field="idx" label="#" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="w-12" />
             <SortTh field="title" label="Title" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
-            <SortTh field="status" label="Status" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden md:table-cell" />
-            <SortTh field="priority" label="Priority" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
-            <SortTh field="assignees" label="Assignees" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
-            <SortTh field="dueDate" label="Due Date" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-            <SortTh field="createdAt" label="Created" sortField={sortField} sortDir={sortDir} onSort={handleSort} className="hidden xl:table-cell" />
-            {listCustomFields.map((cf) => (
-              <th key={cf.id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
-                {cf.label}
-              </th>
-            ))}
+            {visibleListLayout.map((id) => {
+              const sys = LIST_SYSTEM_FIELD_META[id];
+              if (sys) {
+                return (
+                  <SortTh
+                    key={id}
+                    field={sys.sortField!}
+                    label={sys.label}
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    className={sys.colClass}
+                  />
+                );
+              }
+              const cf = allCustomFieldDefs.find((f) => f.id === id);
+              if (!cf) return null;
+              return (
+                <th key={id} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider hidden 2xl:table-cell">
+                  {cf.label}
+                </th>
+              );
+            })}
             <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={8} className="text-center py-20">
+              <td colSpan={totalCols} className="text-center py-20">
                 <div className="flex flex-col items-center gap-4 text-slate-400">
                   <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
                     <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -432,10 +567,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
               >
                 <td className="px-4 py-4 text-slate-300 text-xs font-mono w-12">{rowNum}</td>
                 <td className="px-4 py-4">
-                  <div
-                    className="flex items-center gap-2.5 cursor-pointer"
-                    onClick={() => onTaskClick(task)}
-                  >
+                  <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onTaskClick(task)}>
                     <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]} ring-2 ring-white`} />
                     <span className="font-semibold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1">{task.title}</span>
                     {(task.subtaskCount ?? 0) > 0 && (
@@ -452,45 +584,68 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                     <p className="text-xs text-slate-400 mt-0.5 pl-5 line-clamp-1">{task.description}</p>
                   )}
                 </td>
-                <td className="px-4 py-4 hidden md:table-cell">
-                  <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${STATUS_COLORS[task.status]}`}>
-                    {STATUS_LABELS[task.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-4 hidden lg:table-cell">
-                  <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${PRIORITY_COLORS[task.priority]}`}>
-                    {PRIORITY_LABELS[task.priority]}
-                  </span>
-                </td>
-                <td className="px-4 py-4 hidden lg:table-cell">
-                  {task.assignees.length > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <AvatarGroup users={task.assignees} max={3} size="md" />
-                      {task.assignees.length === 1 && (
-                        <span className="text-xs text-slate-600 font-medium">{task.assignees[0].fullName}</span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-slate-300 text-xs">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-4 hidden xl:table-cell">
-                  {task.dueDate ? (() => {
-                    const { formatted, overdue } = formatDueDate(task.dueDate!);
+                {visibleListLayout.map((id) => {
+                  if (id === "status") {
                     return (
-                      <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-md font-medium ${overdue ? "bg-red-50 text-red-600 border border-red-100" : "bg-slate-50 text-slate-500 border border-slate-100"}`}>
-                        {formatted}
-                      </span>
+                      <td key="status" className="px-4 py-4 hidden md:table-cell">
+                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${STATUS_COLORS[task.status]}`}>
+                          {STATUS_LABELS[task.status]}
+                        </span>
+                      </td>
                     );
-                  })() : <span className="text-slate-300 text-xs">—</span>}
-                </td>
-                <td className="px-4 py-4 hidden xl:table-cell text-xs text-slate-400 font-medium">
-                  {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </td>
-                {listCustomFields.map((cf) => {
-                  const val = task.customFields.find((c) => c.fieldId === cf.id)?.value ?? "";
+                  }
+                  if (id === "priority") {
+                    return (
+                      <td key="priority" className="px-4 py-4 hidden lg:table-cell">
+                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-semibold border ${PRIORITY_COLORS[task.priority]}`}>
+                          {PRIORITY_LABELS[task.priority]}
+                        </span>
+                      </td>
+                    );
+                  }
+                  if (id === "assignees") {
+                    return (
+                      <td key="assignees" className="px-4 py-4 hidden lg:table-cell">
+                        {task.assignees.length > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <AvatarGroup users={task.assignees} max={3} size="md" />
+                            {task.assignees.length === 1 && (
+                              <span className="text-xs text-slate-600 font-medium">{task.assignees[0].fullName}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 text-xs">—</span>
+                        )}
+                      </td>
+                    );
+                  }
+                  if (id === "due_date") {
+                    return (
+                      <td key="due_date" className="px-4 py-4 hidden xl:table-cell">
+                        {task.dueDate ? (() => {
+                          const { formatted, overdue } = formatDueDate(task.dueDate!);
+                          return (
+                            <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-md font-medium ${overdue ? "bg-red-50 text-red-600 border border-red-100" : "bg-slate-50 text-slate-500 border border-slate-100"}`}>
+                              {formatted}
+                            </span>
+                          );
+                        })() : <span className="text-slate-300 text-xs">—</span>}
+                      </td>
+                    );
+                  }
+                  if (id === "created_at") {
+                    return (
+                      <td key="created_at" className="px-4 py-4 hidden xl:table-cell text-xs text-slate-400 font-medium">
+                        {new Date(task.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </td>
+                    );
+                  }
+                  // Custom field
+                  const cf = allCustomFieldDefs.find((f) => f.id === id);
+                  if (!cf) return null;
+                  const val = task.customFields.find((c) => c.fieldId === id)?.value ?? "";
                   return (
-                    <td key={cf.id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
+                    <td key={id} className="px-4 py-4 hidden 2xl:table-cell text-xs text-slate-600 font-medium max-w-[140px] truncate">
                       {val || <span className="text-slate-300">—</span>}
                     </td>
                   );
@@ -498,11 +653,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                 <td className="px-4 py-4">
                   <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                     {/* View */}
-                    <button
-                      onClick={() => onTaskClick(task)}
-                      title="View task"
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
+                    <button onClick={() => onTaskClick(task)} title="View task" className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -510,11 +661,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                     </button>
                     {/* Edit */}
                     {(currentUserRole === "admin" || canModify(task)) && (
-                      <button
-                        onClick={() => onEdit(task)}
-                        title="Edit task"
-                        className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
-                      >
+                      <button onClick={() => onEdit(task)} title="Edit task" className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
@@ -522,11 +669,7 @@ function ListView({ tasks, onTaskClick, onEdit, onDelete, currentUserId, current
                     )}
                     {/* Delete */}
                     {currentUserRole === "admin" && (
-                      <button
-                        onClick={() => onDelete(task)}
-                        title="Delete task"
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
+                      <button onClick={() => onDelete(task)} title="Delete task" className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -628,6 +771,7 @@ function DeleteConfirm({ task, onConfirm, onCancel }: { task: Task; onConfirm: (
 
 export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const { taskFields, refresh: refreshFields } = useCustomFields();
+  const { listLayout, saveListLayout, refresh: refreshLayout } = useFieldLayout();
   const listCustomFields = taskFields.filter((f) => f.showInListView);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -1022,6 +1166,9 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
             currentUserRole={currentUser.role}
             exportTrigger={exportTrigger}
             listCustomFields={listCustomFields}
+            allCustomFieldDefs={taskFields}
+            listLayout={listLayout}
+            onSaveListLayout={saveListLayout}
           />
         )}
       </div>
@@ -1053,7 +1200,7 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
         <CustomFieldFormModal
           defaultEntity="task"
           onClose={() => setShowCFModal(false)}
-          onSaved={(_saved) => { refreshFields(); setShowCFModal(false); }}
+          onSaved={(_saved) => { refreshFields(); refreshLayout(); setShowCFModal(false); }}
         />
       )}
     </div>

@@ -234,3 +234,11 @@ model UserCustomFieldValue {
   @@unique([userId, fieldId])
   @@map("user_custom_field_values")
 }
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
