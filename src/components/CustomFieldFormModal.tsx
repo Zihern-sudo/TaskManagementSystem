@@ -72,13 +72,18 @@ export default function CustomFieldFormModal({
   const [insertAfter, setInsertAfter] = useState<string | "__beginning__">("__end__");
 
   // ── Layout context (for position dropdown) ────────────────────────────────
-  const { modalLayout } = useFieldLayout();
-  const { taskFields: allCustomFields } = useCustomFields();
+  const { modalLayout, userFormLayout } = useFieldLayout();
+  const { taskFields: allCustomFields, userFields: allUserFields } = useCustomFields();
 
-  // Build label map for the position dropdown
+  // Build label maps for the position dropdowns
+  const USER_FORM_SYSTEM_FIELD_LABELS: Record<string, string> = { role: "Role" };
   const fieldLabelMap: Record<string, string> = { ...SYSTEM_FIELD_LABELS };
   for (const cf of allCustomFields) {
     fieldLabelMap[cf.id] = cf.label;
+  }
+  const userFieldLabelMap: Record<string, string> = { ...USER_FORM_SYSTEM_FIELD_LABELS };
+  for (const uf of allUserFields) {
+    userFieldLabelMap[uf.id] = uf.label;
   }
 
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -184,7 +189,7 @@ export default function CustomFieldFormModal({
         ? optionsRaw.split(",").map((o) => o.trim()).filter(Boolean)
         : [];
       const body: Record<string, unknown> = { label: label.trim(), fieldKey: fieldKey.trim(), type, entity, showInListView, options, required };
-      if (entity === "task" && insertAfter !== "__end__") {
+      if (insertAfter !== "__end__") {
         body.insertAfter = insertAfter === "__beginning__" ? null : insertAfter;
       }
       return body;
@@ -351,7 +356,7 @@ export default function CustomFieldFormModal({
                   key={e}
                   type="button"
                   disabled={isEdit}
-                  onClick={() => !isEdit && setEntity(e)}
+                  onClick={() => { if (!isEdit) { setEntity(e); setInsertAfter("__end__"); } }}
                   className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
                     entity === e
                       ? "border-indigo-500 bg-indigo-50 text-indigo-700"
@@ -393,6 +398,29 @@ export default function CustomFieldFormModal({
                 <option value="__end__">At the end</option>
               </select>
               <p className="mt-1 text-[11px] text-slate-400">Where this field appears in the task panel and list view.</p>
+            </div>
+          )}
+
+          {/* Position (create mode, user entity) */}
+          {!isEdit && entity === "user" && userFormLayout.length > 0 && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                Position
+              </label>
+              <select
+                value={insertAfter}
+                onChange={(e) => setInsertAfter(e.target.value)}
+                className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+              >
+                <option value="__beginning__">At the beginning</option>
+                {userFormLayout.map((id) => (
+                  <option key={id} value={id}>
+                    After {userFieldLabelMap[id] ?? id}
+                  </option>
+                ))}
+                <option value="__end__">At the end</option>
+              </select>
+              <p className="mt-1 text-[11px] text-slate-400">Where this field appears in the add user form.</p>
             </div>
           )}
 

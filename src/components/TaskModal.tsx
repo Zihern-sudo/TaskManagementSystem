@@ -225,6 +225,9 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [localLayout, setLocalLayout] = useState<string[]>([]);
   const [savingLayout, setSavingLayout] = useState(false);
+  const [isCustomizingCreate, setIsCustomizingCreate] = useState(false);
+  const [localCreateLayout, setLocalCreateLayout] = useState<string[]>([]);
+  const [savingCreateLayout, setSavingCreateLayout] = useState(false);
 
   // Custom field values keyed by fieldId
   const [cfValues, setCfValues] = useState<Record<string, string>>(() => {
@@ -347,63 +350,133 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                   placeholder="Add a description…"
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
-                    {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Priority</label>
-                  <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
-                    {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Due Date</label>
-                <input type="date" value={dueDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDueDate(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assignees <span className="text-slate-400 font-normal normal-case">(up to 5)</span></label>
-                <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
+
+              {/* Reorder Fields button */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fields</span>
+                <button
+                  type="button"
+                  onClick={() => { setLocalCreateLayout(modalLayout.filter((id) => id !== "created_at")); setIsCustomizingCreate(true); }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  Reorder Fields
+                </button>
               </div>
 
-              {/* Custom fields */}
-              {customFieldDefs.length > 0 && (
-                <div className="space-y-3 pt-1 border-t border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-1">Custom Fields</p>
-                  {customFieldDefs.map((def) => (
-                    <div key={def.id}>
-                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                        {def.label}
-                        {def.required && <span className="text-red-400 ml-1">*</span>}
-                      </label>
-                      {def.type === "picklist" ? (
-                        <select
-                          value={cfValues[def.id] ?? ""}
-                          onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
-                        >
-                          <option value="">— Select —</option>
-                          {def.options.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          value={cfValues[def.id] ?? ""}
-                          onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
-                          placeholder={`Enter ${def.label.toLowerCase()}…`}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
-                        />
-                      )}
-                    </div>
-                  ))}
+              {/* Reorder panel */}
+              {isCustomizingCreate && (
+                <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 space-y-3">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Drag to reorder</p>
+                  <DndContext
+                    collisionDetection={closestCenter}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        setLocalCreateLayout((prev) => arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id))));
+                      }
+                    }}
+                  >
+                    <SortableContext items={localCreateLayout} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                        {localCreateLayout.map((fieldId) => {
+                          const label = MODAL_SYSTEM_FIELD_LABELS[fieldId] ?? customFieldDefs.find((f) => f.id === fieldId)?.label ?? fieldId;
+                          return <SortableFieldItem key={fieldId} id={fieldId} label={label} />;
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setSavingCreateLayout(true);
+                        await saveModalLayout([...localCreateLayout, "created_at"]);
+                        setSavingCreateLayout(false);
+                        setIsCustomizingCreate(false);
+                      }}
+                      disabled={savingCreateLayout}
+                      className="px-4 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                      style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                    >
+                      {savingCreateLayout ? "Saving…" : "Save Layout"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomizingCreate(false)}
+                      className="px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <span className="text-[10px] text-slate-400 ml-1">Your personal layout is saved</span>
+                  </div>
                 </div>
               )}
+
+              {/* Dynamic fields rendered in modalLayout order (excluding created_at) */}
+              {modalLayout.filter((id) => id !== "created_at").map((fieldId) => {
+                if (fieldId === "status") return (
+                  <div key="status">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>
+                    <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
+                      {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                    </select>
+                  </div>
+                );
+                if (fieldId === "priority") return (
+                  <div key="priority">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Priority</label>
+                    <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all">
+                      {PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
+                    </select>
+                  </div>
+                );
+                if (fieldId === "due_date") return (
+                  <div key="due_date">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Due Date</label>
+                    <input type="date" value={dueDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDueDate(e.target.value)} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all" />
+                  </div>
+                );
+                if (fieldId === "assignees") return (
+                  <div key="assignees">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Assignees <span className="text-slate-400 font-normal normal-case">(up to 5)</span></label>
+                    <AssigneePicker users={users} selected={assigneeIds} onChange={setAssigneeIds} />
+                  </div>
+                );
+                // Custom field
+                const def = customFieldDefs.find((f) => f.id === fieldId);
+                if (!def) return null;
+                return (
+                  <div key={def.id}>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                      {def.label}
+                      {def.required && <span className="text-red-400 ml-1">*</span>}
+                    </label>
+                    {def.type === "picklist" ? (
+                      <select
+                        value={cfValues[def.id] ?? ""}
+                        onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white transition-all"
+                      >
+                        <option value="">— Select —</option>
+                        {def.options.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={cfValues[def.id] ?? ""}
+                        onChange={(e) => setCfValues((prev) => ({ ...prev, [def.id]: e.target.value }))}
+                        placeholder={`Enter ${def.label.toLowerCase()}…`}
+                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                      />
+                    )}
+                  </div>
+                );
+              })}
 
               {error && (
                 <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">

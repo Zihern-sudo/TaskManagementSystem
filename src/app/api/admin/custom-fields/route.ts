@@ -3,12 +3,12 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType, FieldEntity } from "@prisma/client";
-import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS } from "@/app/api/settings/field-layout/route";
+import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS, USER_FORM_SYSTEM_FIELDS } from "@/app/api/settings/field-layout/route";
 
 const VALID_FIELD_TYPES = Object.values(FieldType);
 const VALID_ENTITIES = Object.values(FieldEntity);
 
-function userLayoutKey(userId: string, surface: "task_modal" | "task_list"): string {
+function userLayoutKey(userId: string, surface: "task_modal" | "task_list" | "user_form"): string {
   return `user_layout:${userId}:${surface}`;
 }
 
@@ -115,13 +115,15 @@ export async function POST(req: NextRequest) {
   });
 
   // ── Update the creating admin's personal layout with the chosen position ──
+  const insertAfterId = typeof insertAfter === "string" ? insertAfter : null;
   if (field.entity === "task") {
-    const insertAfterId = typeof insertAfter === "string" ? insertAfter : null;
     const modalKey = userLayoutKey(caller.id, "task_modal");
     const listKey = userLayoutKey(caller.id, "task_list");
-
     await updateLayoutWithNewField(modalKey, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId);
     await updateLayoutWithNewField(listKey, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId);
+  } else if (field.entity === "user") {
+    const formKey = userLayoutKey(caller.id, "user_form");
+    await updateLayoutWithNewField(formKey, [...USER_FORM_SYSTEM_FIELDS], field.id, insertAfterId);
   }
 
   return ok("Custom field created successfully.", { field }, 201);

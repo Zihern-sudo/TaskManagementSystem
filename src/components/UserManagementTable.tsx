@@ -85,6 +85,12 @@ function SortTh({
   );
 }
 
+// ── User form system field labels ──────────────────────────────────────────
+
+const USER_FORM_SYSTEM_FIELD_LABELS: Record<string, string> = {
+  role: "Role",
+};
+
 // ── User list system field metadata ────────────────────────────────────────
 
 const USER_SYSTEM_FIELD_META: Record<string, { label: string; sortField: SortField; colClass: string }> = {
@@ -119,6 +125,7 @@ interface UserModalProps {
 function UserModal({ user, onClose, onSave }: UserModalProps) {
   const isEdit = !!user;
   const { userFields } = useCustomFields();
+  const { userFormLayout, saveUserFormLayout } = useFieldLayout();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [role, setRole] = useState<UserRole>(user?.role ?? "member");
@@ -129,6 +136,9 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [isCustomizingForm, setIsCustomizingForm] = useState(false);
+  const [localFormLayout, setLocalFormLayout] = useState<string[]>([]);
+  const [savingFormLayout, setSavingFormLayout] = useState(false);
 
   async function handleSave() {
     if (!fullName.trim() || !email.trim()) { setError("Name and email are required."); return; }
@@ -202,52 +212,117 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
             />
             {isEdit && <p className="text-xs text-slate-400 mt-1.5 font-medium">Email address cannot be changed after creation.</p>}
           </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
 
-          {userFields.length > 0 && (
-            <>
-              <div className="border-t border-slate-100 pt-3">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Custom Fields</p>
-                <div className="space-y-3">
-                  {userFields.map((field) => (
-                    <div key={field.id}>
-                      <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                        {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
-                      </label>
-                      {field.type === "picklist" ? (
-                        <select
-                          value={cfValues[field.id] ?? ""}
-                          onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
-                        >
-                          <option value="">— Select —</option>
-                          {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          value={cfValues[field.id] ?? ""}
-                          onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
-                          placeholder={`Enter ${field.label.toLowerCase()}…`}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
+          {/* Reorder Fields button */}
+          {userFormLayout.length > 0 && (
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fields</span>
+              <button
+                type="button"
+                onClick={() => { setLocalFormLayout(userFormLayout); setIsCustomizingForm(true); }}
+                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Reorder Fields
+              </button>
+            </div>
           )}
+
+          {/* Reorder panel */}
+          {isCustomizingForm && (
+            <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Drag to reorder</p>
+              <DndContext
+                collisionDetection={closestCenter}
+                onDragEnd={(event: DragEndEvent) => {
+                  const { active, over } = event;
+                  if (over && active.id !== over.id) {
+                    setLocalFormLayout((prev) => arrayMove(prev, prev.indexOf(String(active.id)), prev.indexOf(String(over.id))));
+                  }
+                }}
+              >
+                <SortableContext items={localFormLayout} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-2">
+                    {localFormLayout.map((fieldId) => {
+                      const label = USER_FORM_SYSTEM_FIELD_LABELS[fieldId] ?? userFields.find((f) => f.id === fieldId)?.label ?? fieldId;
+                      return <SortableColItem key={fieldId} id={fieldId} label={label} />;
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSavingFormLayout(true);
+                    await saveUserFormLayout(localFormLayout);
+                    setSavingFormLayout(false);
+                    setIsCustomizingForm(false);
+                  }}
+                  disabled={savingFormLayout}
+                  className="px-4 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                  style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+                >
+                  {savingFormLayout ? "Saving…" : "Save Layout"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomizingForm(false)}
+                  className="px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <span className="text-[10px] text-slate-400 ml-1">Your personal layout is saved</span>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic fields rendered in userFormLayout order */}
+          {userFormLayout.map((fieldId) => {
+            if (fieldId === "role") return (
+              <div key="role">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                >
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            );
+            // Custom user field
+            const field = userFields.find((f) => f.id === fieldId);
+            if (!field) return null;
+            return (
+              <div key={field.id}>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
+                </label>
+                {field.type === "picklist" ? (
+                  <select
+                    value={cfValues[field.id] ?? ""}
+                    onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                  >
+                    <option value="">— Select —</option>
+                    {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={cfValues[field.id] ?? ""}
+                    onChange={(e) => setCfValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
+                    placeholder={`Enter ${field.label.toLowerCase()}…`}
+                  />
+                )}
+              </div>
+            );
+          })}
 
           {error && (
             <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
