@@ -4,6 +4,22 @@ import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType } from "@prisma/client";
 
+const MODAL_LAYOUT_KEY = "task_modal_layout";
+const LIST_LAYOUT_KEY = "task_list_layout";
+
+async function removeFieldFromLayout(key: string, fieldId: string): Promise<void> {
+  const setting = await db.appSetting.findUnique({ where: { key } });
+  if (!setting) return;
+  try {
+    const parsed = JSON.parse(setting.value);
+    if (!Array.isArray(parsed)) return;
+    const updated = (parsed as string[]).filter((id) => id !== fieldId);
+    await db.appSetting.update({ where: { key }, data: { value: JSON.stringify(updated) } });
+  } catch {
+    // ignore
+  }
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 // ── PATCH /api/admin/custom-fields/[id] ────────────────────────────────────
@@ -217,6 +233,10 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) {
   if (!existing) return fail("Custom field not found.", 404);
 
   await db.customField.delete({ where: { id } });
+
+  // Remove field from both layout settings
+  await removeFieldFromLayout(MODAL_LAYOUT_KEY, id);
+  await removeFieldFromLayout(LIST_LAYOUT_KEY, id);
 
   return ok("Custom field and all its values deleted successfully.");
 }

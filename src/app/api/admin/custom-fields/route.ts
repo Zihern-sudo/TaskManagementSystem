@@ -3,9 +3,13 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType, FieldEntity } from "@prisma/client";
+import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS } from "@/app/api/admin/settings/field-layout/route";
 
 const VALID_FIELD_TYPES = Object.values(FieldType);
 const VALID_ENTITIES = Object.values(FieldEntity);
+
+const MODAL_LAYOUT_KEY = "task_modal_layout";
+const LIST_LAYOUT_KEY = "task_list_layout";
 
 // ── GET /api/admin/custom-fields ───────────────────────────────────────────
 
@@ -38,6 +42,7 @@ export async function GET(req: NextRequest) {
  *   options        string[]    (required when type = "picklist")
  *   required       boolean     (optional, default: false)
  *   order          number      (optional, auto-appended to end if omitted)
+ *   insertAfter    string      (optional) — field ID (system or custom) to insert after in layouts
  */
 export async function POST(req: NextRequest) {
   const caller = getRequestUser(req);
@@ -51,7 +56,7 @@ export async function POST(req: NextRequest) {
     return fail("Request body must be valid JSON.");
   }
 
-  const { label, fieldKey, type, entity, showInListView, options, required, order } = (body ?? {}) as Record<string, unknown>;
+  const { label, fieldKey, type, entity, showInListView, options, required, order, insertAfter } = (body ?? {}) as Record<string, unknown>;
 
   const errors: Record<string, string[]> = {};
 
@@ -108,5 +113,58 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // ── Update layout settings to insert new field at the chosen position ──
+  if (field.entity === "task") {
+    const insertAfterId = typeof insertAfter === "string" ? insertAfter : null;
+
+    await updateLayoutWithNewField(MODAL_LAYOUT_KEY, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId);
+    await updateLayoutWithNewField(LIST_LAYOUT_KEY, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId);
+  }
+
   return ok("Custom field created successfully.", { field }, 201);
+}
+
+/**
+ * Reads a layout from AppSetting, inserts the new field ID after `insertAfterId`
+ * (or appends to end if not found), and saves back.
+ */
+async function updateLayoutWithNewField(
+  key: string,
+  systemFields: string[],
+  newFieldId: string,
+  insertAfterId: string | null
+): Promise<void> {
+  const setting = await db.appSetting.findUnique({ where: { key } });
+  let layout: string[] = [];
+
+  if (setting) {
+    try {
+      const parsed = JSON.parse(setting.value);
+      if (Array.isArray(parsed)) layout = parsed;
+    } catch {
+      // ignore, start fresh
+    }
+  }
+
+  // If layout is empty, seed with system fields
+  if (layout.length === 0) {
+    layout = [...systemFields];
+  }
+
+  // Remove the new field if somehow already present
+  layout = layout.filter((id) => id !== newFieldId);
+
+  if (insertAfterId && layout.includes(insertAfterId)) {
+    const idx = layout.indexOf(insertAfterId);
+    layout.splice(idx + 1, 0, newFieldId);
+  } else {
+    // Append at end
+    layout.push(newFieldId);
+  }
+
+  await db.appSetting.upsert({
+    where: { key },
+    update: { value: JSON.stringify(layout) },
+    create: { key, value: JSON.stringify(layout) },
+  });
 }

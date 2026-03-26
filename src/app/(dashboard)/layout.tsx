@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { decodeSession, SESSION_COOKIE } from "@/lib/session";
 import { db } from "@/lib/db";
 import DashboardShell from "@/components/DashboardShell";
+import { FieldLayoutProvider } from "@/context/FieldLayoutContext";
 import { SessionUser } from "@/types";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -27,8 +28,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   return (
-    <DashboardShell user={user} needsPasswordSetup={dbUser?.hasSetPassword === false}>
-      {children}
-    </DashboardShell>
+    <FieldLayoutProvider>
+      <DashboardShell user={user} needsPasswordSetup={dbUser?.hasSetPassword === false}>
+        {children}
+      </DashboardShell>
+    </FieldLayoutProvider>
   );
 }
