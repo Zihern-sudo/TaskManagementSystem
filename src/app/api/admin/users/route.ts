@@ -13,6 +13,7 @@ export const USER_SELECT = {
   status: true,
   avatarUrl: true,
   createdAt: true,
+  updatedAt: true,
   customFieldValues: {
     select: {
       field: { select: { id: true, label: true, fieldKey: true, type: true, order: true } },
@@ -40,6 +41,7 @@ export function serializeUser(user: any) {
         value: v.value,
       })),
     createdAt: new Date(user.createdAt).toISOString(),
+    updatedAt: new Date(user.updatedAt).toISOString(),
   };
 }
 

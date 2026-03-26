@@ -23,6 +23,7 @@ import {
   TaskPriority,
   SessionUser,
   CustomFieldDef,
+  AssignedUser,
   STATUS_LABELS,
   STATUS_COLORS,
   PRIORITY_COLORS,
@@ -641,6 +642,9 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   const [search, setSearch] = useState("");
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "">("");
   const [filterAssignedToMe, setFilterAssignedToMe] = useState(false);
+  const [showExpiredTasks, setShowExpiredTasks] = useState(true);
+  const [filterUserId, setFilterUserId] = useState("");
+  const [allUsers, setAllUsers] = useState<AssignedUser[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
   const [exportTrigger, setExportTrigger] = useState(0);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -674,6 +678,13 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
   }, []);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  useEffect(() => {
+    if (currentUser.role !== "admin") return;
+    fetch("/api/users").then((r) => r.json()).then((d) => {
+      if (d.data?.users) setAllUsers(d.data.users);
+    });
+  }, [currentUser.role]);
 
   function handleDragStart(event: DragStartEvent) {
     justDragged.current = false;
@@ -735,11 +746,14 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
     handleTaskDeleted(deleteTarget.id);
   }
 
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const filteredTasks = tasks.filter((t) => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
     const matchPriority = !filterPriority || t.priority === filterPriority;
     const matchAssigned = !filterAssignedToMe || t.assignees.some((a) => a.id === currentUser.id);
-    return matchSearch && matchPriority && matchAssigned;
+    const matchExpiry = showExpiredTasks || !t.dueDate || new Date(t.dueDate) >= todayStart;
+    const matchUser = !filterUserId || t.assignees.some((a) => a.id === filterUserId);
+    return matchSearch && matchPriority && matchAssigned && matchExpiry && matchUser;
   });
 
   const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
@@ -857,6 +871,31 @@ export default function TaskBoard({ currentUser }: TaskBoardProps) {
                 </button>
               );
             })()}
+
+            {/* Filter by User — admin only */}
+            {currentUser.role === "admin" && allUsers.length > 0 && (
+              <select
+                value={filterUserId}
+                onChange={(e) => setFilterUserId(e.target.value)}
+                className="h-8 text-[13px] border border-slate-200 rounded-md px-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-700 hidden md:block"
+              >
+                <option value="">All Users</option>
+                {allUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Show Expired Tasks checkbox */}
+            <label className="hidden md:flex items-center gap-1.5 h-8 px-2.5 rounded-md text-[13px] font-medium border border-slate-200 bg-white text-slate-600 cursor-pointer hover:bg-slate-50 select-none">
+              <input
+                type="checkbox"
+                checked={showExpiredTasks}
+                onChange={(e) => setShowExpiredTasks(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer"
+              />
+              Show Expired
+            </label>
 
             {/* View toggle */}
             <div className="flex items-center bg-slate-100 rounded-md p-0.5">
