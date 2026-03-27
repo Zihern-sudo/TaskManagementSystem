@@ -6,6 +6,7 @@ export interface FieldLayoutContextValue {
   modalLayout: string[];
   listLayout: string[];
   userListLayout: string[];
+  userFormLayout: string[];
   /** Re-fetches all layouts from the server — call after creating/deleting custom fields */
   refresh: () => Promise<void>;
   /** Saves the calling user's task modal layout */
@@ -14,22 +15,27 @@ export interface FieldLayoutContextValue {
   saveListLayout: (layout: string[]) => Promise<void>;
   /** Saves the calling user's user management table layout */
   saveUserListLayout: (layout: string[]) => Promise<void>;
+  /** Saves the calling user's add-user form layout */
+  saveUserFormLayout: (layout: string[]) => Promise<void>;
 }
 
 const FieldLayoutContext = createContext<FieldLayoutContextValue>({
   modalLayout: [],
   listLayout: [],
   userListLayout: [],
+  userFormLayout: [],
   refresh: async () => {},
   saveModalLayout: async () => {},
   saveListLayout: async () => {},
   saveUserListLayout: async () => {},
+  saveUserFormLayout: async () => {},
 });
 
 export function FieldLayoutProvider({ children }: { children: React.ReactNode }) {
   const [modalLayout, setModalLayout] = useState<string[]>([]);
   const [listLayout, setListLayout] = useState<string[]>([]);
   const [userListLayout, setUserListLayout] = useState<string[]>([]);
+  const [userFormLayout, setUserFormLayout] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -39,6 +45,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
         setModalLayout(json.data?.modalLayout ?? []);
         setListLayout(json.data?.listLayout ?? []);
         setUserListLayout(json.data?.userListLayout ?? []);
+        setUserFormLayout(json.data?.userFormLayout ?? []);
       }
     } catch {
       // silently ignore; layouts fall back to default order
@@ -72,12 +79,21 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
     setUserListLayout(layout);
   }, []);
 
+  const saveUserFormLayout = useCallback(async (layout: string[]) => {
+    await fetch("/api/settings/field-layout", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userFormLayout: layout }),
+    });
+    setUserFormLayout(layout);
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   return (
-    <FieldLayoutContext.Provider value={{ modalLayout, listLayout, userListLayout, refresh, saveModalLayout, saveListLayout, saveUserListLayout }}>
+    <FieldLayoutContext.Provider value={{ modalLayout, listLayout, userListLayout, userFormLayout, refresh, saveModalLayout, saveListLayout, saveUserListLayout, saveUserFormLayout }}>
       {children}
     </FieldLayoutContext.Provider>
   );
