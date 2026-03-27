@@ -76,7 +76,7 @@ export default function CustomFieldFormModal({
   const { taskFields: allCustomFields, userFields: allUserFields } = useCustomFields();
 
   // Build label maps for the position dropdowns
-  const USER_FORM_SYSTEM_FIELD_LABELS: Record<string, string> = { role: "Role" };
+  const USER_FORM_SYSTEM_FIELD_LABELS: Record<string, string> = { full_name: "Full Name", email: "Email Address", role: "Role" };
   const fieldLabelMap: Record<string, string> = { ...SYSTEM_FIELD_LABELS };
   for (const cf of allCustomFields) {
     fieldLabelMap[cf.id] = cf.label;
