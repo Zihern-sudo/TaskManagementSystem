@@ -10,9 +10,9 @@ import { getRequestUser } from "@/lib/session";
 export const MODAL_SYSTEM_FIELDS = ["status", "priority", "due_date", "assignees", "created_at"] as const;
 export const LIST_SYSTEM_FIELDS = ["status", "priority", "assignees", "due_date", "created_at"] as const;
 export const USER_LIST_SYSTEM_FIELDS = ["role", "status", "created_at"] as const;
-export const USER_FORM_SYSTEM_FIELDS = ["role"] as const;
+export const USER_FORM_SYSTEM_FIELDS = ["full_name", "email", "role"] as const;
 /** Fields available in the Create Task form (no created_at — set by server) */
-export const TASK_FORM_SYSTEM_FIELDS = ["status", "priority", "due_date", "assignees"] as const;
+export const TASK_FORM_SYSTEM_FIELDS = ["title", "description", "status", "priority", "due_date", "assignees"] as const;
 
 /** Build a per-user AppSetting key. */
 function userKey(userId: string, surface: "task_modal" | "task_list" | "user_list" | "user_form" | "task_form"): string {

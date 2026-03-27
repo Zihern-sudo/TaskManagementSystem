@@ -15,6 +15,8 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 
 const MODAL_SYSTEM_FIELD_LABELS: Record<string, string> = {
+  title: "Title",
+  description: "Description",
   status: "Status",
   priority: "Priority",
   due_date: "Due Date",
@@ -329,31 +331,8 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
 
             {/* Form */}
             <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Title <span className="text-red-400">*</span></label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  autoFocus
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
-                  placeholder="What needs to be done?"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
-                  placeholder="Add a description…"
-                />
-              </div>
-
               {/* Reorder Fields button */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fields</span>
+              <div className="flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => { setLocalCreateLayout([...taskFormLayout]); setIsCustomizingCreate(true); }}
@@ -415,8 +394,33 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 </div>
               )}
 
-              {/* Dynamic fields rendered in taskFormLayout order */}
+              {/* All fields rendered in taskFormLayout order */}
               {taskFormLayout.map((fieldId) => {
+                if (fieldId === "title") return (
+                  <div key="title">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Title <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      autoFocus
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                      placeholder="What needs to be done?"
+                    />
+                  </div>
+                );
+                if (fieldId === "description") return (
+                  <div key="description">
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={3}
+                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none bg-slate-50 focus:bg-white transition-all placeholder-slate-400"
+                      placeholder="Add a description…"
+                    />
+                  </div>
+                );
                 if (fieldId === "status") return (
                   <div key="status">
                     <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>

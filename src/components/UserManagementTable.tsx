@@ -88,6 +88,8 @@ function SortTh({
 // ── User form system field labels ──────────────────────────────────────────
 
 const USER_FORM_SYSTEM_FIELD_LABELS: Record<string, string> = {
+  full_name: "Full Name",
+  email: "Email Address",
   role: "Role",
 };
 
@@ -190,33 +192,9 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
         </div>
 
         <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Full Name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
-              placeholder="John Doe"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isEdit}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all placeholder-slate-400"
-              placeholder="john@company.com"
-            />
-            {isEdit && <p className="text-xs text-slate-400 mt-1.5 font-medium">Email address cannot be changed after creation.</p>}
-          </div>
-
           {/* Reorder Fields button */}
           {userFormLayout.length > 0 && (
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fields</span>
+            <div className="flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => { setLocalFormLayout(userFormLayout); setIsCustomizingForm(true); }}
@@ -279,8 +257,34 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
             </div>
           )}
 
-          {/* Dynamic fields rendered in userFormLayout order */}
+          {/* All fields rendered in userFormLayout order */}
           {userFormLayout.map((fieldId) => {
+            if (fieldId === "full_name") return (
+              <div key="full_name">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all placeholder-slate-400"
+                  placeholder="John Doe"
+                />
+              </div>
+            );
+            if (fieldId === "email") return (
+              <div key="email">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email Address <span className="text-red-400">*</span></label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isEdit}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all placeholder-slate-400"
+                  placeholder="john@company.com"
+                />
+                {isEdit && <p className="text-xs text-slate-400 mt-1.5 font-medium">Email address cannot be changed after creation.</p>}
+              </div>
+            );
             if (fieldId === "role") return (
               <div key="role">
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Role</label>
