@@ -3,12 +3,12 @@ import { db } from "@/lib/db";
 import { ok, fail } from "@/lib/response";
 import { getRequestUser } from "@/lib/session";
 import { FieldType, FieldEntity } from "@prisma/client";
-import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS, USER_FORM_SYSTEM_FIELDS } from "@/app/api/settings/field-layout/route";
+import { MODAL_SYSTEM_FIELDS, LIST_SYSTEM_FIELDS, USER_FORM_SYSTEM_FIELDS, TASK_FORM_SYSTEM_FIELDS } from "@/app/api/settings/field-layout/route";
 
 const VALID_FIELD_TYPES = Object.values(FieldType);
 const VALID_ENTITIES = Object.values(FieldEntity);
 
-function userLayoutKey(userId: string, surface: "task_modal" | "task_list" | "user_form"): string {
+function userLayoutKey(userId: string, surface: "task_modal" | "task_list" | "user_form" | "task_form"): string {
   return `user_layout:${userId}:${surface}`;
 }
 
@@ -119,8 +119,12 @@ export async function POST(req: NextRequest) {
   if (field.entity === "task") {
     const modalKey = userLayoutKey(caller.id, "task_modal");
     const listKey = userLayoutKey(caller.id, "task_list");
-    await updateLayoutWithNewField(modalKey, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId);
-    await updateLayoutWithNewField(listKey, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId);
+    const formKey = userLayoutKey(caller.id, "task_form");
+    await Promise.all([
+      updateLayoutWithNewField(modalKey, [...MODAL_SYSTEM_FIELDS], field.id, insertAfterId),
+      updateLayoutWithNewField(listKey, [...LIST_SYSTEM_FIELDS], field.id, insertAfterId),
+      updateLayoutWithNewField(formKey, [...TASK_FORM_SYSTEM_FIELDS], field.id, insertAfterId),
+    ]);
   } else if (field.entity === "user") {
     const formKey = userLayoutKey(caller.id, "user_form");
     await updateLayoutWithNewField(formKey, [...USER_FORM_SYSTEM_FIELDS], field.id, insertAfterId);

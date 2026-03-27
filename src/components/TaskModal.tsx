@@ -207,7 +207,7 @@ function MetaField({ label, children }: { label: string; children: React.ReactNo
 
 export default function TaskModal({ task, isNew, onClose, onSave, onDelete, currentUserId, currentUserRole }: TaskModalProps) {
   const { taskFields: customFieldDefs } = useCustomFields();
-  const { modalLayout, saveModalLayout } = useFieldLayout();
+  const { modalLayout, saveModalLayout, taskFormLayout, saveTaskFormLayout } = useFieldLayout();
   const [title, setTitle] = useState(task?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? "not_started");
@@ -356,7 +356,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fields</span>
                 <button
                   type="button"
-                  onClick={() => { setLocalCreateLayout(modalLayout.filter((id) => id !== "created_at")); setIsCustomizingCreate(true); }}
+                  onClick={() => { setLocalCreateLayout([...taskFormLayout]); setIsCustomizingCreate(true); }}
                   className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2.5 py-1.5 rounded-lg transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,7 +393,7 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                       type="button"
                       onClick={async () => {
                         setSavingCreateLayout(true);
-                        await saveModalLayout([...localCreateLayout, "created_at"]);
+                        await saveTaskFormLayout(localCreateLayout);
                         setSavingCreateLayout(false);
                         setIsCustomizingCreate(false);
                       }}
@@ -415,8 +415,8 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
                 </div>
               )}
 
-              {/* Dynamic fields rendered in modalLayout order (excluding created_at) */}
-              {modalLayout.filter((id) => id !== "created_at").map((fieldId) => {
+              {/* Dynamic fields rendered in taskFormLayout order */}
+              {taskFormLayout.map((fieldId) => {
                 if (fieldId === "status") return (
                   <div key="status">
                     <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Status</label>

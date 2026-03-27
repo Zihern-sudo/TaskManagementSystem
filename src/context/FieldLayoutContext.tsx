@@ -7,9 +7,10 @@ export interface FieldLayoutContextValue {
   listLayout: string[];
   userListLayout: string[];
   userFormLayout: string[];
+  taskFormLayout: string[];
   /** Re-fetches all layouts from the server — call after creating/deleting custom fields */
   refresh: () => Promise<void>;
-  /** Saves the calling user's task modal layout */
+  /** Saves the calling user's task modal (edit) layout */
   saveModalLayout: (layout: string[]) => Promise<void>;
   /** Saves the calling user's task list layout */
   saveListLayout: (layout: string[]) => Promise<void>;
@@ -17,6 +18,8 @@ export interface FieldLayoutContextValue {
   saveUserListLayout: (layout: string[]) => Promise<void>;
   /** Saves the calling user's add-user form layout */
   saveUserFormLayout: (layout: string[]) => Promise<void>;
+  /** Saves the calling user's create-task form layout (isolated from edit modal) */
+  saveTaskFormLayout: (layout: string[]) => Promise<void>;
 }
 
 const FieldLayoutContext = createContext<FieldLayoutContextValue>({
@@ -24,11 +27,13 @@ const FieldLayoutContext = createContext<FieldLayoutContextValue>({
   listLayout: [],
   userListLayout: [],
   userFormLayout: [],
+  taskFormLayout: [],
   refresh: async () => {},
   saveModalLayout: async () => {},
   saveListLayout: async () => {},
   saveUserListLayout: async () => {},
   saveUserFormLayout: async () => {},
+  saveTaskFormLayout: async () => {},
 });
 
 export function FieldLayoutProvider({ children }: { children: React.ReactNode }) {
@@ -36,6 +41,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
   const [listLayout, setListLayout] = useState<string[]>([]);
   const [userListLayout, setUserListLayout] = useState<string[]>([]);
   const [userFormLayout, setUserFormLayout] = useState<string[]>([]);
+  const [taskFormLayout, setTaskFormLayout] = useState<string[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -46,6 +52,7 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
         setListLayout(json.data?.listLayout ?? []);
         setUserListLayout(json.data?.userListLayout ?? []);
         setUserFormLayout(json.data?.userFormLayout ?? []);
+        setTaskFormLayout(json.data?.taskFormLayout ?? []);
       }
     } catch {
       // silently ignore; layouts fall back to default order
@@ -88,12 +95,21 @@ export function FieldLayoutProvider({ children }: { children: React.ReactNode })
     setUserFormLayout(layout);
   }, []);
 
+  const saveTaskFormLayout = useCallback(async (layout: string[]) => {
+    await fetch("/api/settings/field-layout", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskFormLayout: layout }),
+    });
+    setTaskFormLayout(layout);
+  }, []);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   return (
-    <FieldLayoutContext.Provider value={{ modalLayout, listLayout, userListLayout, userFormLayout, refresh, saveModalLayout, saveListLayout, saveUserListLayout, saveUserFormLayout }}>
+    <FieldLayoutContext.Provider value={{ modalLayout, listLayout, userListLayout, userFormLayout, taskFormLayout, refresh, saveModalLayout, saveListLayout, saveUserListLayout, saveUserFormLayout, saveTaskFormLayout }}>
       {children}
     </FieldLayoutContext.Provider>
   );

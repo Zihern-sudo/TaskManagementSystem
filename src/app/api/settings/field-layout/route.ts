@@ -11,9 +11,11 @@ export const MODAL_SYSTEM_FIELDS = ["status", "priority", "due_date", "assignees
 export const LIST_SYSTEM_FIELDS = ["status", "priority", "assignees", "due_date", "created_at"] as const;
 export const USER_LIST_SYSTEM_FIELDS = ["role", "status", "created_at"] as const;
 export const USER_FORM_SYSTEM_FIELDS = ["role"] as const;
+/** Fields available in the Create Task form (no created_at — set by server) */
+export const TASK_FORM_SYSTEM_FIELDS = ["status", "priority", "due_date", "assignees"] as const;
 
 /** Build a per-user AppSetting key. */
-function userKey(userId: string, surface: "task_modal" | "task_list" | "user_list" | "user_form"): string {
+function userKey(userId: string, surface: "task_modal" | "task_list" | "user_list" | "user_form" | "task_form"): string {
   return `user_layout:${userId}:${surface}`;
 }
 
@@ -72,13 +74,14 @@ export async function GET(req: NextRequest) {
   const caller = getRequestUser(req);
   if (!caller) return fail("Authentication required.", 401);
 
-  const [taskCustomFields, userCustomFields, modalStored, listStored, userListStored, userFormStored] = await Promise.all([
+  const [taskCustomFields, userCustomFields, modalStored, listStored, userListStored, userFormStored, taskFormStored] = await Promise.all([
     db.customField.findMany({ where: { entity: "task" }, orderBy: { order: "asc" }, select: { id: true } }),
     db.customField.findMany({ where: { entity: "user" }, orderBy: { order: "asc" }, select: { id: true } }),
     getStoredLayout(userKey(caller.id, "task_modal")),
     getStoredLayout(userKey(caller.id, "task_list")),
     getStoredLayout(userKey(caller.id, "user_list")),
     getStoredLayout(userKey(caller.id, "user_form")),
+    getStoredLayout(userKey(caller.id, "task_form")),
   ]);
 
   const taskCFIds = taskCustomFields.map((f) => f.id);
@@ -88,8 +91,9 @@ export async function GET(req: NextRequest) {
   const listLayout = mergeLayout(listStored, [...LIST_SYSTEM_FIELDS, ...taskCFIds]);
   const userListLayout = mergeLayout(userListStored, [...USER_LIST_SYSTEM_FIELDS, ...userCFIds]);
   const userFormLayout = mergeLayout(userFormStored, [...USER_FORM_SYSTEM_FIELDS, ...userCFIds]);
+  const taskFormLayout = mergeLayout(taskFormStored, [...TASK_FORM_SYSTEM_FIELDS, ...taskCFIds]);
 
-  return ok("Field layout retrieved successfully.", { modalLayout, listLayout, userListLayout, userFormLayout });
+  return ok("Field layout retrieved successfully.", { modalLayout, listLayout, userListLayout, userFormLayout, taskFormLayout });
 }
 
 // ── PATCH /api/admin/settings/field-layout ──────────────────────────────────
@@ -116,13 +120,13 @@ export async function PATCH(req: NextRequest) {
 
   const data = (body ?? {}) as Record<string, unknown>;
 
-  if (!("modalLayout" in data) && !("listLayout" in data) && !("userListLayout" in data) && !("userFormLayout" in data)) {
-    return fail("Provide modalLayout, listLayout, userListLayout, or userFormLayout.");
+  if (!("modalLayout" in data) && !("listLayout" in data) && !("userListLayout" in data) && !("userFormLayout" in data) && !("taskFormLayout" in data)) {
+    return fail("Provide modalLayout, listLayout, userListLayout, userFormLayout, or taskFormLayout.");
   }
 
   const ops: Promise<unknown>[] = [];
 
-  function queueLayout(field: string, surface: "task_modal" | "task_list" | "user_list" | "user_form") {
+  function queueLayout(field: string, surface: "task_modal" | "task_list" | "user_list" | "user_form" | "task_form") {
     const value = data[field];
     if (!(field in data)) return;
     if (!Array.isArray(value) || (value as unknown[]).some((id) => typeof id !== "string")) {
@@ -143,6 +147,7 @@ export async function PATCH(req: NextRequest) {
     queueLayout("listLayout", "task_list");
     queueLayout("userListLayout", "user_list");
     queueLayout("userFormLayout", "user_form");
+    queueLayout("taskFormLayout", "task_form");
   } catch (e) {
     return fail((e as Error).message);
   }
