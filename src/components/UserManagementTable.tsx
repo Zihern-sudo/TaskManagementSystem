@@ -144,6 +144,16 @@ function UserModal({ user, onClose, onSave }: UserModalProps) {
 
   async function handleSave() {
     if (!fullName.trim() || !email.trim()) { setError("Name and email are required."); return; }
+
+    // Validate required custom fields
+    const missingRequired = userFields.filter(
+      (field) => field.required && !cfValues[field.id]?.trim()
+    );
+    if (missingRequired.length > 0) {
+      setError(`Please fill in the required field: ${missingRequired.map((f) => f.label).join(", ")}`);
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {

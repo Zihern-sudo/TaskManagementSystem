@@ -250,6 +250,16 @@ export default function TaskModal({ task, isNew, onClose, onSave, onDelete, curr
 
   async function handleSave() {
     if (!title.trim()) { setError("Title is required."); return; }
+
+    // Validate required custom fields
+    const missingRequired = customFieldDefs.filter(
+      (def) => def.required && !cfValues[def.id]?.trim()
+    );
+    if (missingRequired.length > 0) {
+      setError(`Please fill in the required field: ${missingRequired.map((d) => d.label).join(", ")}`);
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
