@@ -1,0 +1,212 @@
+/**
+ * @Author      WDCi ()
+ * @Date        April 2026
+ * @group       Formula Builder
+ * @Description Styles for the formulaBuilder LWC.
+ *              All class names are prefixed with formula-builder- per team convention.
+ * @changehistory
+ * ISS-002768 2026-04-03 WDCi - Initial development of Formula Builder LWC
+ */
+
+/* ── Container ────────────────────────────────────────────────────────────── */
+
+.formula-builder-container {
+    position: relative;
+    display:  flex;
+    flex-direction: column;
+    min-height: 20rem;
+    background-color: var(--slds-g-color-neutral-base-100, #ffffff);
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Spinner overlay ─────────────────────────────────────────────────────── */
+
+.formula-builder-spinner {
+    position: absolute;
+    inset:    0;
+    z-index:  100;
+    background: rgba(255, 255, 255, 0.6);
+    display:  flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.formula-builder-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--slds-g-color-border-base-1, #dddbda);
+}
+
+.formula-builder-header-icon {
+    margin-right: 0.5rem;
+}
+
+.formula-builder-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--slds-g-color-neutral-base-10, #080707);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.formula-builder-dirty-indicator {
+    color: var(--slds-g-color-brand-base-50, #0176d3);
+    font-weight: 900;
+    font-size: 1.1rem;
+    text-decoration: none;
+    cursor: default;
+}
+
+.formula-builder-subtitle {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+}
+
+/* ── Card body ───────────────────────────────────────────────────────────── */
+
+.formula-builder-body {
+    flex: 1;
+    padding: 1rem;
+}
+
+/* ── Operator toolbar ────────────────────────────────────────────────────── */
+
+.formula-builder-toolbar {
+    display:   flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--slds-g-color-neutral-base-95, #f3f3f3);
+    border: 1px solid var(--slds-g-color-border-base-1, #dddbda);
+    border-radius: 0.25rem;
+}
+
+.formula-builder-toolbar-label {
+    font-size:   0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.0625rem;
+    color: var(--slds-g-color-neutral-base-40, #706e6b);
+    white-space: nowrap;
+}
+
+.formula-builder-operator-btn {
+    padding:       0.125rem 0.5rem;
+    font-size:     0.8125rem;
+    font-family:   'Courier New', Courier, monospace;
+    font-weight:   600;
+    border-radius: 0.25rem;
+    min-width:     2.5rem;
+    line-height:   1.5;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.formula-builder-operator-btn:hover {
+    background-color: var(--slds-g-color-brand-base-95, #eaf4ff);
+    color: var(--slds-g-color-brand-base-40, #0176d3);
+    border-color: var(--slds-g-color-brand-base-40, #0176d3);
+}
+
+/* ── Metadata type selector ──────────────────────────────────────────────── */
+
+.formula-builder-metadata-section {
+    max-width: 30rem;
+}
+
+.formula-builder-metadata-combobox {
+    width: 100%;
+}
+
+/* ── Formula textarea ────────────────────────────────────────────────────── */
+
+.formula-builder-editor-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.formula-builder-textarea {
+    width: 100%;
+}
+
+/* Force the inner textarea element to use a monospace font for readability */
+.formula-builder-textarea textarea {
+    font-family: 'Courier New', Courier, monospace;
+    font-size:   0.875rem;
+    min-height:  10rem;
+    resize:      vertical;
+    white-space: pre;
+    overflow-x:  auto;
+}
+
+/* ── Verification status banner ──────────────────────────────────────────── */
+
+.formula-builder-verify-status {
+    display:       flex;
+    align-items:   center;
+    padding:       0.625rem 0.875rem;
+    border-radius: 0.25rem;
+    border:        1px solid transparent;
+    font-size:     0.875rem;
+    margin-top:    0.5rem;
+}
+
+.formula-builder-verify-valid {
+    background-color: var(--slds-g-color-success-base-95, #ecf9f0);
+    border-color:     var(--slds-g-color-success-base-50, #2e844a);
+    color:            var(--slds-g-color-success-base-30, #194e31);
+}
+
+.formula-builder-verify-invalid {
+    background-color: var(--slds-g-color-error-base-95, #fef1ee);
+    border-color:     var(--slds-g-color-error-base-50, #ea001e);
+    color:            var(--slds-g-color-error-base-30, #8e0000);
+}
+
+.formula-builder-verify-icon {
+    flex-shrink: 0;
+}
+
+.formula-builder-verify-message {
+    word-break: break-word;
+}
+
+/* ── Footer / action bar ─────────────────────────────────────────────────── */
+
+.formula-builder-footer {
+    padding:    0.75rem 1rem;
+    border-top: 1px solid var(--slds-g-color-border-base-1, #dddbda);
+    background-color: var(--slds-g-color-neutral-base-98, #fafaf9);
+    border-radius: 0 0 0.25rem 0.25rem;
+}
+
+.formula-builder-actions {
+    display:     flex;
+    flex-wrap:   wrap;
+    gap:         0.5rem;
+    align-items: center;
+}
+
+.formula-builder-actions-left {
+    gap: 0.5rem;
+}
+
+.formula-builder-actions-right {
+    gap: 0.5rem;
+}
+
+.formula-builder-btn-clear,
+.formula-builder-btn-reset {
+    color: var(--slds-g-color-neutral-base-40, #706e6b);
+}
+
+.formula-builder-btn-verify {
+    min-width: 8rem;
+}
+
+.formula-builder-btn-save {
+    min-width: 8rem;
+}
